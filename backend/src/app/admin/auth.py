@@ -16,7 +16,7 @@ class AdminAuth(AuthenticationBackend):
             return False
 
         async with AsyncSessionLocal() as session:
-            repo = UsersRepository()
+            repo = UserRepository()
             user = await repo.get_by_email(session, email)
 
             if not user:

@@ -1,0 +1,15 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.3
+SQLAlchemy>=2.0
+asyncpg>=0.29
+alembic>=1.13
+python-multipart>=0.0.9
+python-jose[cryptography]>=3.3
+passlib>=1.7.4
+email-validator>=2.1
+reportlab>=4.0
+itsdangerous>=2.2.0
+sqladmin==0.16.1
+psycopg2-binary==2.9.9

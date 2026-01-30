@@ -163,6 +163,41 @@ async def users_me(
     return await _user_to_foodgram(session, user, user.id)
 
 
+@router.get("/users/subscriptions/")
+async def list_subscriptions(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+    user=Depends(get_current_user_token),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=6, ge=1),
+    recipes_limit: int = Query(default=3, ge=0),
+):
+    limit = clamp_limit(limit)
+    recipes_limit = min(recipes_limit, 100)
+
+    author_ids = await subs_repo.list_author_ids(session, user_id=user.id)
+    count = len(author_ids)
+    offset = (page - 1) * limit
+    paged_ids = author_ids[offset : offset + limit]
+    results: List[dict] = []
+
+    for author_id in paged_ids:
+        author = await users_repo.get_by_id(session, author_id)
+        if not author:
+            continue
+
+        stmt = select(Recipe).where(Recipe.author_id == author_id).order_by(Recipe.id.desc())
+        author_recipes = list((await session.execute(stmt)).scalars().all())
+        recipes_count = len(author_recipes)
+        author_recipes = author_recipes[:recipes_limit] if recipes_limit else []
+        recipes_short = [{"id": r.id, "name": r.title, "image": r.image, "cooking_time": r.cooking_time_minutes} for r in author_recipes]
+
+        results.append({**(await _user_to_foodgram(session, author, user.id)), "recipes": recipes_short, "recipes_count": recipes_count})
+
+    meta = _page_meta(count, page, limit, request)
+    return {**meta, "results": results}
+
+
 @router.get("/users/{user_id}/")
 async def get_user(
     user_id: int,
@@ -237,42 +272,6 @@ async def reset_password():
 
 
 # -------------------- subscriptions --------------------
-
-
-@router.get("/users/subscriptions/")
-async def list_subscriptions(
-    request: Request,
-    session: AsyncSession = Depends(get_db_session),
-    user=Depends(get_current_user_token),
-    page: int = Query(default=1, ge=1),
-    limit: int = Query(default=6, ge=1),
-    recipes_limit: int = Query(default=3, ge=0),
-):
-    limit = clamp_limit(limit)
-    recipes_limit = min(recipes_limit, 100)
-
-    author_ids = await subs_repo.list_author_ids(session, user_id=user.id)
-    count = len(author_ids)
-    offset = (page - 1) * limit
-    paged_ids = author_ids[offset : offset + limit]
-    results: List[dict] = []
-
-    for author_id in paged_ids:
-        author = await users_repo.get_by_id(session, author_id)
-        if not author:
-            continue
-
-        stmt = select(Recipe).where(Recipe.author_id == author_id).order_by(Recipe.id.desc())
-        author_recipes = list((await session.execute(stmt)).scalars().all())
-        recipes_count = len(author_recipes)
-        author_recipes = author_recipes[:recipes_limit] if recipes_limit else []
-        recipes_short = [{"id": r.id, "name": r.title, "image": r.image, "cooking_time": r.cooking_time_minutes} for r in author_recipes]
-
-        results.append({**(await _user_to_foodgram(session, author, user.id)), "recipes": recipes_short, "recipes_count": recipes_count})
-
-    meta = _page_meta(count, page, limit, request)
-    return {**meta, "results": results}
-
 
 @router.post("/users/{author_id}/subscribe/", status_code=status.HTTP_201_CREATED)
 async def subscribe(

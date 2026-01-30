@@ -45,8 +45,8 @@ class RecipeRepository:
 
         if "tag_ids" in data:
             await self._replace_tags(session, recipe.id, data["tag_ids"])
-        if "ingredients" in data:
-            await self._replace_ingredients(session, recipe.id, data["ingredients"])
+        if payload.ingredients is not None:
+            await self._replace_ingredients(session, recipe.id, payload.ingredients)
 
         return recipe
 

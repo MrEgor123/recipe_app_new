@@ -1,72 +1,121 @@
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 52px;
+.pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:18px 0 4px;
 }
 
-.paginationItem {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #a0a0a0;
-  font-size: 32px;
-  margin-right: 10px;
-  font-weight: 600;
+/* цифры страниц */
+.paginationItem{
+  min-width:36px;
+  height:36px;
+  padding:0 10px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:14px;
+  font-weight:700;
+  line-height:1;
+
+  color:var(--muted);
+  background:var(--surface-2);
+
+  border:1px solid var(--border);
+  border-radius:999px;
+
+  cursor:pointer;
+  user-select:none;
+
+  transition:background .15s,border-color .15s,color .15s,box-shadow .15s,transform .05s;
 }
 
-.paginationItem:last-child {
-  margin-right: 0px;
+.paginationItem:hover{
+  color:var(--text);
+  border-color:var(--border-strong);
+  box-shadow:var(--shadow-sm);
 }
 
-.paginationItemActive {
-  color: #000000;
-  cursor: default;
+.paginationItem:active{
+  transform:translateY(1px);
 }
 
-.arrow {
-  cursor: pointer;
-  min-width: 44px;
-  width: 100%;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  background: #000;
-  justify-content: center;
-  max-width: 44px;
-  border-radius: 44px;
+.paginationItemActive{
+  color:var(--accent);
+  background:rgba(37,99,235,.12);
+  border-color:rgba(37,99,235,.35);
+  box-shadow:var(--shadow-sm);
 }
 
-.arrowLeft {
-  margin-right: 24px;
+/* стрелки */
+.arrow{
+  width:36px;
+  height:36px;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:999px;
+
+  cursor:pointer;
+  user-select:none;
+
+  transition:background .15s,border-color .15s,box-shadow .15s,transform .05s;
 }
 
-.arrowRight svg {
-  transform: rotate(180deg);
-  transform-origin: center center;
+.arrow:hover{
+  background:var(--surface);
+  border-color:var(--border-strong);
+  box-shadow:var(--shadow-sm);
 }
 
-.arrowRight {
-  margin-left: 24px;
+.arrow:active{
+  transform:translateY(1px);
 }
 
-.arrowRight svg {
-  transform: rotate(180deg);
-  transform-origin: center center;
+.arrowDisabled{
+  opacity:.45;
+  cursor:not-allowed;
+  box-shadow:none !important;
+  pointer-events:none;
 }
 
-.arrowDisabled {
-  cursor: not-allowed;
-  background: #efefef;
+/* иконка стрелки */
+.arrow svg{
+  width:16px;
+  height:16px;
 }
 
-.arrowDisabled path {
-  stroke: #a0a0a0;
+/* перебиваем любые варианты SVG (path/polyline/use и т.д.) */
+.arrow svg *{
+  fill:var(--muted) !important;
+  stroke:var(--muted) !important;
+  stroke-width:2 !important;
+  vector-effect:non-scaling-stroke;
 }
 
-@media screen and (max-width: 660px) {
-  .paginationItem {
-    font-size: 23px;
-  }
+.arrow:hover svg *{
+  fill:var(--text) !important;
+  stroke:var(--text) !important;
+}
+
+.arrowLeft svg{
+  transform:rotate(180deg);
+}
+
+.arrowIcon{
+  font-size:16px;
+  font-weight:800;
+  line-height:1;
+  color:var(--muted);
+  transition:color .15s;
+}
+
+.arrow:hover .arrowIcon{
+  color:var(--text);
 }

@@ -20,19 +20,22 @@ import { useRecipe } from "../../utils/index.js";
 import api from "../../api";
 import { Notification } from "../../components/notification";
 
-const SingleCard = ({ loadItem, updateOrders }) => {
+const SingleCard = ({ updateOrders }) => {
   const [loading, setLoading] = useState(true);
   const [notificationPosition, setNotificationPosition] = useState("-100%");
   const [notificationError, setNotificationError] = useState({
     text: "",
     position: "-100%",
   });
+
   const { recipe, setRecipe, handleLike, handleAddToCart, handleSubscribe } =
     useRecipe();
+
   const authContext = useContext(AuthContext);
   const userContext = useContext(UserContext);
   const { id } = useParams();
   const history = useHistory();
+  const { url } = useRouteMatch();
 
   const handleCopyLink = () => {
     api
@@ -47,10 +50,6 @@ const SingleCard = ({ loadItem, updateOrders }) => {
             }, 3000);
           })
           .catch(() => {
-            /**
-             * В Safari не работает запись в буфер внутри асинхронного запроса,
-             * поэтому добавил отдельную плашку на этот случай
-             */
             setNotificationError({
               text: `Ваша ссылка: ${shortLink}`,
               position: "40px",
@@ -64,21 +63,18 @@ const SingleCard = ({ loadItem, updateOrders }) => {
     setNotificationError((prev) => ({ ...prev, position: "-100%" }));
   };
 
-  useEffect((_) => {
+  useEffect(() => {
     api
-      .getRecipe({
-        recipe_id: id,
-      })
+      .getRecipe({ recipe_id: id })
       .then((res) => {
         setRecipe(res);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         history.push("/not-found");
       });
   }, []);
 
-  const { url } = useRouteMatch();
   const {
     author = {},
     image,
@@ -96,152 +92,160 @@ const SingleCard = ({ loadItem, updateOrders }) => {
       <Container>
         <MetaTags>
           <title>{name}</title>
-          <meta name="description" content={`Фудграм - ${name}`} />
+          <meta name="description" content={`Recipe App - ${name}`} />
           <meta property="og:title" content={name} />
         </MetaTags>
-        <div className={styles["single-card"]}>
-          <img
-            src={image}
-            alt={name}
-            className={styles["single-card__image"]}
-          />
-          <div className={styles["single-card__info"]}>
-            <div className={styles["single-card__header-info"]}>
-              <h1 className={styles["single-card__title"]}>{name}</h1>
-              <div className={styles.btnsBox}>
-                <Button
-                  modifier="style_none"
-                  clickHandler={handleCopyLink}
-                  className={cn(styles["single-card__save-button"])}
-                  data-tooltip-id="tooltip-copy"
-                  data-tooltip-content="Скопировать прямую ссылку на рецепт"
-                  data-tooltip-place="top"
-                >
-                  <Icons.CopyLinkIcon />
-                </Button>
-                <Tooltip id="tooltip-copy" />
-                {authContext && (
-                  <>
-                    <Button
-                      modifier="style_none"
-                      clickHandler={(_) => {
-                        handleLike({ id, toLike: Number(!is_favorited) });
-                      }}
-                      className={cn(styles["single-card__save-button"], {
-                        [styles["single-card__save-button_active"]]:
-                          is_favorited,
-                      })}
-                      data-tooltip-id="tooltip-save"
-                      data-tooltip-content={
-                        is_favorited
-                          ? "Удалить из избранного"
-                          : "Добавить в избранное"
-                      }
-                      data-tooltip-place="bottom"
-                    >
-                      <Icons.LikeIcon />
-                    </Button>
-                    <Tooltip id="tooltip-save" />
-                  </>
-                )}
-              </div>
+
+        <div className={styles.page}>
+          <div className={styles.layout}>
+            <div className={styles.media}>
+              <img src={image} alt={name} className={styles.image} />
             </div>
 
-            <div className={styles["single-card__extra-info"]}>
-              <TagsContainer tags={tags} />
-              <p className={styles["single-card__text"]}>{cooking_time} мин.</p>
-              <p className={styles["single-card__text_with_link"]}>
-                <div className={styles["single-card__text"]}>
+            <div className={styles.content}>
+              <div className={styles.header}>
+                <h1 className={styles.title}>{name}</h1>
+
+                <div className={styles.actions}>
+                  <Button
+                    modifier="style_none"
+                    clickHandler={handleCopyLink}
+                    className={styles.iconBtn}
+                    data-tooltip-id="tooltip-copy"
+                    data-tooltip-content="Скопировать ссылку"
+                    data-tooltip-place="top"
+                  >
+                    <Icons.CopyLinkIcon />
+                  </Button>
+                  <Tooltip id="tooltip-copy" />
+
+                  {authContext && (
+                    <>
+                      <Button
+                        modifier="style_none"
+                        clickHandler={() => {
+                          handleLike({ id, toLike: Number(!is_favorited) });
+                        }}
+                        className={cn(styles.iconBtn, {
+                          [styles.iconBtnActive]: is_favorited,
+                        })}
+                        data-tooltip-id="tooltip-save"
+                        data-tooltip-content={
+                          is_favorited
+                            ? "Удалить из избранного"
+                            : "Добавить в избранное"
+                        }
+                        data-tooltip-place="bottom"
+                      >
+                        <Icons.LikeIcon />
+                      </Button>
+                      <Tooltip id="tooltip-save" />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.metaRow}>
+                <TagsContainer tags={tags} />
+
+                <span className={styles.metaItem}>{cooking_time} мин.</span>
+
+                <span className={styles.divider} />
+
+                <div className={styles.metaItem}>
                   <div
-                    className={styles["single-card__user-avatar"]}
+                    className={styles.authorAvatar}
                     style={{
-                      "background-image": `url(${
-                        author.avatar || DefaultImage
-                      })`,
+                      backgroundImage: `url(${author.avatar || DefaultImage})`,
                     }}
                   />
                   <LinkComponent
                     title={`${author.first_name} ${author.last_name}`}
                     href={`/user/${author.id}`}
-                    className={styles["single-card__link"]}
+                    className={styles.authorLink}
                   />
                 </div>
-              </p>
-              {(userContext || {}).id !== author.id && authContext && (
-                <>
-                  <Button
-                    className={cn(
-                      styles["single-card__button"],
-                      styles["single-card__button_add-user"],
-                      {
-                        [styles["single-card__button_add-user_active"]]:
-                          author.is_subscribed,
+
+                {(userContext || {}).id !== author.id && authContext && (
+                  <>
+                    <span className={styles.divider} />
+                    <Button
+                      className={styles.subscribeBtn}
+                      modifier="style_light"
+                      clickHandler={() => {
+                        handleSubscribe({
+                          author_id: author.id,
+                          toSubscribe: !author.is_subscribed,
+                        });
+                      }}
+                      data-tooltip-id="tooltip-subscribe"
+                      data-tooltip-content={
+                        author.is_subscribed
+                          ? "Отписаться от автора"
+                          : "Подписаться на автора"
                       }
-                    )}
-                    modifier={
-                      author.is_subscribed ? "style_dark" : "style_light"
-                    }
-                    clickHandler={(_) => {
-                      handleSubscribe({
-                        author_id: author.id,
-                        toSubscribe: !author.is_subscribed,
+                      data-tooltip-place="bottom"
+                    >
+                      <Icons.AddUser />
+                    </Button>
+                    <Tooltip id="tooltip-subscribe" />
+                  </>
+                )}
+              </div>
+
+              <div className={styles.primaryRow}>
+                {authContext && (
+                  <Button
+                    className={styles.primaryBtn}
+                    modifier="style_dark"
+                    clickHandler={() => {
+                      handleAddToCart({
+                        id,
+                        toAdd: Number(!is_in_shopping_cart),
+                        callback: updateOrders,
                       });
                     }}
-                    data-tooltip-id="tooltip-subscribe"
-                    data-tooltip-content={
-                      author.is_subscribed
-                        ? "Отписаться от автора"
-                        : "Подписаться на автора"
-                    }
-                    data-tooltip-place="bottom"
                   >
-                    <Icons.AddUser />
+                    {is_in_shopping_cart ? (
+                      <>
+                        <Icons.CheckIcon />
+                        Рецепт добавлен
+                      </>
+                    ) : (
+                      <>
+                        <Icons.PlusIcon />
+                        Добавить в покупки
+                      </>
+                    )}
                   </Button>
-                  <Tooltip id="tooltip-subscribe" />
-                </>
-              )}
+                )}
+
+                {authContext && (userContext || {}).id === author.id && (
+                  <Button
+                    href={`${url}/edit`}
+                    className={styles.editBtn}
+                    modifier="style_light"
+                  >
+                    Редактировать рецепт
+                  </Button>
+                )}
+              </div>
+
+              <div className={styles.section}>
+                <div className={cn(styles.card, styles.ingredientsCard)}>
+                  <Ingredients ingredients={ingredients} />
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <div className={styles.card}>
+                  <Description description={text} />
+                </div>
+              </div>
             </div>
-            <div className={styles["single-card__buttons"]}>
-              {authContext && (
-                <Button
-                  className={cn(
-                    styles["single-card__button"],
-                    styles["single-card__button_add-receipt"]
-                  )}
-                  modifier="style_dark"
-                  clickHandler={(_) => {
-                    handleAddToCart({
-                      id,
-                      toAdd: Number(!is_in_shopping_cart),
-                      callback: updateOrders,
-                    });
-                  }}
-                >
-                  {is_in_shopping_cart ? (
-                    <>
-                      <Icons.CheckIcon />
-                      Рецепт добавлен
-                    </>
-                  ) : (
-                    <>
-                      <Icons.PlusIcon /> Добавить в покупки
-                    </>
-                  )}
-                </Button>
-              )}
-              {authContext && (userContext || {}).id === author.id && (
-                <Button
-                  href={`${url}/edit`}
-                  className={styles["single-card__edit"]}
-                >
-                  Редактировать рецепт
-                </Button>
-              )}
-            </div>
-            <Ingredients ingredients={ingredients} />
-            <Description description={text} />
           </div>
         </div>
+
         <Notification
           text="Ссылка скопирована"
           style={{ right: notificationPosition }}

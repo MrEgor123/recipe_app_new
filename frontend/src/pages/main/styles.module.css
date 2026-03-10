@@ -1,12 +1,51 @@
-.title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+.title{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  width:100%;
+
+  gap:18px;
+  padding:14px 0 10px;
 }
 
-@media screen and (max-width: 770px) {
-  .title {
-    display: block;
+.titleLeft{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:280px;
+}
+
+.titleHint{
+  font-size:13px;
+  color:var(--muted);
+  line-height:1.3;
+}
+
+.titleRight{
+  display:flex;
+  justify-content:flex-end;
+  width:100%;
+}
+
+/* чтобы теги были визуально ближе к заголовку и не "висели" */
+.titleRight :global(.checkboxGroup){
+  margin-bottom:0;
+}
+
+.main{
+  flex:1 0 auto;
+  width:100%;
+}
+
+/* адаптив: заголовок сверху, теги ниже */
+@media screen and (max-width: 770px){
+  .title{
+    flex-direction:column;
+    align-items:stretch;
+    gap:14px;
+    padding:14px 0 10px;
   }
+
+  .titleLeft{ min-width:auto; }
+  .titleRight{ justify-content:flex-start; }
 }

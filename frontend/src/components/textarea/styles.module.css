@@ -1,57 +1,66 @@
-.textarea {
-  margin-bottom: 35px;
-  font-family: 'SF Pro Display', sans-serif;
-  font-style: normal;
-  font-weight: normal;
-  font-size: 16px;
+.textarea{
+  margin-bottom:24px;
+  font-family:"SF Pro Display", sans-serif;
+  font-size:16px;
 }
 
-.textareaLabel {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
+.textareaLabel{
+  display:flex;
+  width:100%;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
 }
 
-.textareaLabelText {
-  margin-right: 30px;
-  text-align: left;
-  min-width: 170px;
-  font-weight: 600;
+.textareaLabelText{
+  margin-right:0;
+  padding-top:12px;
+  text-align:left;
+  min-width:170px;
+  font-weight:600;
+  color:var(--text);
+  flex-shrink:0;
 }
 
-.textareaField {
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  box-sizing: border-box;
-  border-radius: 6px;
-  resize: none;
-  outline: none;
-  font-family: 'SF Pro Display', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 20px;
-  color: #000;
-  padding: 12px 18px;
-  width: 100%;
+.textareaField{
+  background:var(--surface-2);
+  border:1px solid var(--border-strong);
+  border-radius:14px;
+  resize:vertical;
+  outline:none;
+  font-family:"SF Pro Display", sans-serif;
+  font-size:16px;
+  line-height:1.5;
+  color:var(--text);
+  padding:14px 16px;
+  width:100%;
+  min-height:84px;
+  max-height:200px;
+  transition:border-color .15s,box-shadow .15s;
 }
 
-.textareaField:focus {
-  border: 1px solid #4a61dd;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.1);
+.textareaField:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(37,99,235,.10);
 }
 
-@media screen and (max-width: 820px) {
-  .textareaLabel {
-    flex-direction: column;
-    align-items: stretch;
+.textareaField::placeholder{
+  color:#94a3b8;
+}
+
+@media screen and (max-width: 820px){
+  .textareaLabel{
+    flex-direction:column;
+    align-items:stretch;
   }
 
-  .textareaLabelText {
-    margin-bottom: 10px;
+  .textareaLabelText{
+    min-width:auto;
+    padding-top:0;
+    margin-bottom:10px;
   }
 
-  .textareaField {
-    width: 100%;
+  .textareaField{
+    width:100%;
   }
 }

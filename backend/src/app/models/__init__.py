@@ -9,6 +9,7 @@ from app.models.favorite import Favorite
 from app.models.subscription import Subscription
 from app.models.shopping_cart import ShoppingCartItem
 from app.models.short_link import ShortLink
+from app.models.recipe_step import RecipeStep
 
 __all__ = [
     "Base",
@@ -22,4 +23,5 @@ __all__ = [
     "Subscription",
     "ShoppingCartItem",
     "ShortLink",
+    "RecipeStep",
 ]

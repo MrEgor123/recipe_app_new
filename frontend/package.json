@@ -39,5 +39,9 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://web:8000/"
+  "proxy": "http://web:8000/",
+  "devDependencies": {
+    "ajv": "^8.18.0",
+    "ajv-keywords": "^5.1.0"
+  }
 }

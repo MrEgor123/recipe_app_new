@@ -23,53 +23,59 @@ const SignIn = ({ onSignIn, submitError, setSubmitError }) => {
   };
 
   return (
-    <Main withBG asFlex>
+    <Main>
       {authContext && <Redirect to="/recipes" />}
-      <Container className={styles.center}>
+
+      <Container className={styles.page}>
         <MetaTags>
           <title>Войти на сайт</title>
           <meta
             name="description"
-            content="Фудграм - Войти на сайт"
+            content="Recipe App - Войти на сайт"
           />
           <meta property="og:title" content="Войти на сайт" />
         </MetaTags>
-        <Form
-          className={styles.form}
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSignIn(values);
-          }}
-        >
-          <FormTitle>Войти</FormTitle>
 
-          <Input
-            required
-            isAuth={true}
-            name="email"
-            placeholder="Email"
-            onChange={onChange}
-            error={errors}
-          />
-          <Input
-            required
-            isAuth={true}
-            type="password"
-            name="password"
-            placeholder="Пароль"
-            error={errors}
-            submitError={submitError}
-            onChange={onChange}
-          />
-          {/* <LinkComponent
-            className={styles.link}
-            href="/reset-password"
-            title="Забыли пароль?"
-          /> */}
-          <Button modifier="style_dark" type="submit" className={styles.button}>
-            Войти
-          </Button>
-        </Form>
+        <div className={styles.authShell}>
+          <Form
+            className={styles.form}
+            onSubmit={(e) => {
+              e.preventDefault();
+              onSignIn(values);
+            }}
+          >
+            <FormTitle className={styles.title}>Войти</FormTitle>
+
+            <div className={styles.subtitle}>
+              Вход в аккаунт Recipe App
+            </div>
+
+            <div className={styles.fields}>
+              <Input
+                required
+                isAuth={true}
+                name="email"
+                placeholder="Email"
+                onChange={onChange}
+                error={errors}
+              />
+              <Input
+                required
+                isAuth={true}
+                type="password"
+                name="password"
+                placeholder="Пароль"
+                error={errors}
+                submitError={submitError}
+                onChange={onChange}
+              />
+            </div>
+
+            <Button modifier="style_dark" type="submit" className={styles.button}>
+              Войти
+            </Button>
+          </Form>
+        </div>
       </Container>
     </Main>
   );

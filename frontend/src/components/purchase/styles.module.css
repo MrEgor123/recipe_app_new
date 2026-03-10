@@ -1,123 +1,178 @@
-.purchase {
-  margin-bottom: 20px;
-  max-width: 600px;
-  width: 100%;
-  position: relative;
-  padding-bottom: 18px;
-  text-align: left;
-  list-style-type: none;
-  border-bottom: 1px solid #EFEFEF;
+.purchase{
+  max-width:680px;
+  width:100%;
+  position:relative;
+  text-align:left;
+  list-style:none;
+  padding:18px 0;
+  border-bottom:1px solid var(--border);
 }
 
-.purchaseBody {
-  display: flex;
-  align-items: center;
-  align-content: flex-start;
-  justify-content: space-between;
+.purchase:last-child{
+  margin-bottom:0;
 }
 
-.purchaseDelete {
-  font-family: 'Raleway', Helvetica, Arial, sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 17px;
-  color: #858383;
-  text-decoration: none;
+.purchaseBody{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
 }
 
-.recipeLink {
-  color: #000;
-  text-decoration: none;
+.purchaseContent{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  width:100%;
+  min-width:0;
 }
 
-.purchase:last-child {
-  margin-bottom: 0;
+.purchaseImage{
+  width:72px;
+  height:72px;
+  flex-shrink:0;
+  border-radius:16px;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  border:1px solid var(--border);
+  background-color:var(--surface-2);
 }
 
-.purchaseContent {
-  display: grid;
-  position: relative;
-  grid-template-areas: 'image title'
-  'image text';
-  grid-template-columns: auto minmax(250px, 1fr);
-  justify-content: space-between;
-  column-gap: 24px;
-  width: 100%;
+.purchaseInfo{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  flex:1;
 }
 
-.purchaseIngredients {
-  font-size: 16px;
-  list-style: disc;
-  padding-left: 120px;
-  margin-top: 10px;
+.purchaseTopRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
 }
 
-.purchaseImage {
-  width: 80px;
-  height: 80px;
-  grid-area: image;
-  border-radius: 50%;
-  background-size: cover;
-  background-position: 50% 50%;
-  align-self: center;
+.purchaseTitle{
+  margin:0;
+  font-weight:600;
+  font-size:18px;
+  line-height:1.25;
+  color:var(--text);
+  min-width:0;
 }
 
-.purchaseText {
-  font-family: 'Raleway', Helvetica, Arial, sans-serif;
-  font-style: normal;
-  font-weight: normal;
-  font-size: 12px;
-  line-height: 17px;
-  max-width: 300px;
-  color: #000;
-  grid-area: text;
-  align-self: start;
-  margin: 0 0 28px;
-  display: flex;
-  color: #A0A0A0;
-  align-items: center;
+.recipeLink{
+  color:var(--text);
+  text-decoration:none;
 }
 
-.purchaseText:last-child {
-  margin-bottom: 0;
+.recipeLink:hover{
+  color:var(--accent);
 }
 
-.purchaseText svg {
-  margin-right: 10px;
+.purchaseText{
+  margin:0;
+  font-size:13px;
+  line-height:1.4;
+  color:var(--muted);
 }
 
-.purchaseTitle {
-  font-family: 'Raleway', Helvetica, Arial, sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  max-width: 300px;
-  font-size: 16px;
-  align-self: end;
-  line-height: 20px;
-  color: #000;
-  margin: 0 0 12px;
-  grid-area: title;
-  display: flex;
-  align-items: center;
+.purchaseDelete{
+  width:36px;
+  height:36px;
+  flex-shrink:0;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:999px;
+  cursor:pointer;
+
+  transition:background .15s,border-color .15s,box-shadow .15s,transform .05s;
 }
 
-.purchaseExpandButton {
-  transform-origin: center;
-  cursor: pointer;
-  margin-left: 12px;
-  transition: transform .2s;
-  padding: 0px;
+.purchaseDelete:hover{
+  border-color:var(--border-strong);
+  box-shadow:var(--shadow-sm);
 }
 
-
-.purchaseExpandButtonExpanded {
-  transform: rotate(180deg);
+.purchaseDelete:active{
+  transform:translateY(1px);
 }
 
+.purchaseDelete svg,
+.purchaseDelete path{
+  fill:var(--muted);
+  stroke:var(--muted);
+}
 
-@media screen and (max-width: 660px) {
-  .purchaseContent {
-    grid-template-columns: auto 1fr;
+.purchaseExpandButton{
+  width:28px;
+  height:28px;
+  flex-shrink:0;
+
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  background:transparent;
+  border:none;
+  cursor:pointer;
+  padding:0;
+  transition:transform .2s;
+}
+
+.purchaseExpandButtonExpanded{
+  transform:rotate(180deg);
+}
+
+.purchaseIngredients{
+  margin:12px 0 0 88px;
+  padding:14px 16px 14px 28px;
+  list-style:disc;
+
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--surface-2);
+}
+
+.purchaseIngredient{
+  margin:6px 0;
+  font-size:14px;
+  line-height:1.5;
+  color:var(--text);
+}
+
+@media screen and (max-width:660px){
+  .purchase{
+    padding:16px 0;
+  }
+
+  .purchaseBody{
+    align-items:flex-start;
+  }
+
+  .purchaseContent{
+    align-items:flex-start;
+  }
+
+  .purchaseImage{
+    width:64px;
+    height:64px;
+    border-radius:14px;
+  }
+
+  .purchaseTitle{
+    font-size:16px;
+  }
+
+  .purchaseIngredients{
+    margin-left:0;
+    margin-top:12px;
   }
 }

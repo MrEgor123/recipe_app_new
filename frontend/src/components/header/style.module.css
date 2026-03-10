@@ -1,24 +1,52 @@
-.header {
+.header{
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  background: rgba(255,255,255,.86);
+  backdrop-filter: blur(10px);
+
+  border-bottom: 1px solid var(--border);
+
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100px;
+
+  min-height: 72px;
 }
 
-.headerContent {
-  display: grid;
-  align-items: center;
-  grid-template-columns: 1fr 2fr;
+.headerContent{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  min-height:72px;
 }
 
-.headerLogo {
-  max-width: 154px;
-  position: relative;
-  bottom: 12px;
-}
-
-.headerLink {
+.headerLink{
   text-align: left;
   width: fit-content;
   user-select: none;
+}
+
+.brand{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:6px 0;      /* добавили */
+}
+
+.brandTitle{
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.brandSubtitle{
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.2;
 }

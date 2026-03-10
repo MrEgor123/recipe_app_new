@@ -1,14 +1,25 @@
-.tag {
-  display: flex;
-  align-items: center;
-  font-size: 16px;
-  padding: 8px 16px;
-  font-weight: 500;
-  border: 1px solid #a0a0a0;
-  line-height: 120%;
-  background: #fff;
-  color: #000;
-  line-height: 1;
-  text-transform: capitalize;
-  border-radius: 30px;
+.tag{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+
+  height:28px;
+  padding:0 10px;
+
+  font-size:12px;
+  font-weight:600;
+  line-height:1;
+
+  color:var(--muted);
+  background:rgba(255,255,255,.88);
+  backdrop-filter:blur(8px);
+
+  border:1px solid var(--border);
+  border-radius:999px;
+}
+
+.tag_active{
+  color:var(--accent);
+  background:var(--accent-weak);
+  border-color:rgba(37,99,235,.25);
 }

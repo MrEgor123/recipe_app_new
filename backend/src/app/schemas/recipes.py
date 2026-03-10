@@ -3,6 +3,16 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, PositiveInt, condecimal
 
 
+class RecipeStepRead(BaseModel):
+    position: int
+    text: str
+    duration_sec: Optional[int] = None
+
+class RecipeStepIn(BaseModel):
+    position: PositiveInt
+    text: str = Field(min_length=1, max_length=5000)
+    duration_sec: Optional[PositiveInt] = None
+
 class RecipeIngredientIn(BaseModel):
     ingredient_id: int
     amount: condecimal(gt=0, max_digits=10, decimal_places=2)
@@ -20,6 +30,7 @@ class RecipeCreate(BaseModel):
     description: str = Field(min_length=1, max_length=5000)
     cooking_time_minutes: PositiveInt
     tag_ids: List[int] = Field(default_factory=list)
+    steps: List[RecipeStepIn] = Field(default_factory=list)
     ingredients: List[RecipeIngredientIn] = Field(default_factory=list)
 
 
@@ -29,6 +40,7 @@ class RecipeUpdate(BaseModel):
     cooking_time_minutes: Optional[PositiveInt] = None
     tag_ids: Optional[List[int]] = None
     ingredients: Optional[List[RecipeIngredientIn]] = None
+    steps: Optional[List[RecipeStepIn]] = None
 
 
 class RecipeTagOut(BaseModel):
@@ -45,3 +57,4 @@ class RecipeRead(BaseModel):
     cooking_time_minutes: int
     tags: List[RecipeTagOut]
     ingredients: List[RecipeIngredientOut]
+    steps: List[RecipeStepRead] = []

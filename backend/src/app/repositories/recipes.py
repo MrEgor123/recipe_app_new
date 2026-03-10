@@ -1,12 +1,13 @@
 from typing import List, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.favorite import Favorite
 from app.models.recipe import Recipe
 from app.models.recipe_tag import RecipeTag
 from app.models.shopping_cart import ShoppingCartItem
+from app.models.recipe_step import RecipeStep
 from app.schemas.recipes import RecipeCreate, RecipeUpdate
 
 
@@ -28,6 +29,8 @@ class RecipeRepository:
 
         await self._replace_tags(session, recipe.id, payload.tag_ids)
         await self._replace_ingredients(session, recipe.id, payload.ingredients)
+        await self._replace_steps(session, recipe.id, payload.steps)
+
         return recipe
 
     async def update(self, session: AsyncSession, recipe: Recipe, payload: RecipeUpdate) -> Recipe:
@@ -43,10 +46,14 @@ class RecipeRepository:
         await session.commit()
         await session.refresh(recipe)
 
-        if "tag_ids" in data:
+        if "tag_ids" in data and data["tag_ids"] is not None:
             await self._replace_tags(session, recipe.id, data["tag_ids"])
-        if payload.ingredients is not None:
-            await self._replace_ingredients(session, recipe.id, payload.ingredients)
+
+        if "ingredients" in data and data["ingredients"] is not None:
+            await self._replace_ingredients(session, recipe.id, data["ingredients"])
+
+        if "steps" in data and data["steps"] is not None:
+            await self._replace_steps(session, recipe.id, data["steps"])
 
         return recipe
 
@@ -79,11 +86,7 @@ class RecipeRepository:
             )
 
         if is_favorited:
-            stmt = (
-                stmt.join(Favorite, Favorite.recipe_id == Recipe.id)
-                .where(Favorite.user_id == user_id)
-                .distinct()
-            )
+            stmt = stmt.join(Favorite, Favorite.recipe_id == Recipe.id).where(Favorite.user_id == user_id).distinct()
 
         if is_in_shopping_cart:
             stmt = (
@@ -126,36 +129,63 @@ class RecipeRepository:
         return int(result.scalar_one())
 
     async def _replace_tags(self, session: AsyncSession, recipe_id: int, tag_ids: List[int]) -> None:
-        from sqlalchemy import delete
-        from app.models.recipe_tag import RecipeTag
-
         await session.execute(delete(RecipeTag).where(RecipeTag.recipe_id == recipe_id))
         if tag_ids:
             session.add_all([RecipeTag(recipe_id=recipe_id, tag_id=tid) for tid in tag_ids])
         await session.commit()
 
     async def _replace_ingredients(self, session: AsyncSession, recipe_id: int, ingredients_in) -> None:
-        from sqlalchemy import delete
         from app.models.recipe_ingredient import RecipeIngredient
 
         await session.execute(delete(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id))
         if ingredients_in:
+            # важно: у тебя сюда иногда прилетает list[dict], поэтому нормализуем
+            normalized = []
+            for item in ingredients_in:
+                if isinstance(item, dict):
+                    ingredient_id = int(item.get("ingredient_id") or item.get("id"))
+                    amount = float(item.get("amount"))
+                else:
+                    ingredient_id = int(item.ingredient_id)
+                    amount = float(item.amount)
+                normalized.append((ingredient_id, amount))
+
             session.add_all(
                 [
-                    RecipeIngredient(
-                        recipe_id=recipe_id,
-                        ingredient_id=item.ingredient_id,
-                        amount=float(item.amount),
-                    )
-                    for item in ingredients_in
+                    RecipeIngredient(recipe_id=recipe_id, ingredient_id=ingredient_id, amount=amount)
+                    for ingredient_id, amount in normalized
+                ]
+            )
+        await session.commit()
+
+    async def _replace_steps(self, session: AsyncSession, recipe_id: int, steps_in) -> None:
+        await session.execute(delete(RecipeStep).where(RecipeStep.recipe_id == recipe_id))
+        if steps_in:
+            # шаги тоже нормализуем: list[dict] или list[pydantic]
+            normalized = []
+            for item in steps_in:
+                if isinstance(item, dict):
+                    position = int(item["position"])
+                    text = str(item["text"])
+                    duration_sec = item.get("duration_sec")
+                    duration_sec = int(duration_sec) if duration_sec is not None else None
+                else:
+                    position = int(item.position)
+                    text = str(item.text)
+                    duration_sec = int(item.duration_sec) if item.duration_sec is not None else None
+                normalized.append((position, text, duration_sec))
+
+            normalized.sort(key=lambda x: x[0])
+            session.add_all(
+                [
+                    RecipeStep(recipe_id=recipe_id, position=pos, text=text, duration_sec=dur)
+                    for pos, text, dur in normalized
                 ]
             )
         await session.commit()
 
     async def get_recipe_tags(self, session: AsyncSession, recipe_id: int):
-        from sqlalchemy import select
         from app.models.tag import Tag
-        from app.models.recipe_tag import RecipeTag
 
         stmt = (
             select(Tag)
@@ -167,7 +197,6 @@ class RecipeRepository:
         return list(result.scalars().all())
 
     async def get_recipe_ingredients(self, session: AsyncSession, recipe_id: int):
-        from sqlalchemy import select
         from app.models.ingredient import Ingredient
         from app.models.recipe_ingredient import RecipeIngredient
 
@@ -179,3 +208,8 @@ class RecipeRepository:
         )
         result = await session.execute(stmt)
         return list(result.all())
+
+    async def get_recipe_steps(self, session: AsyncSession, recipe_id: int) -> List[RecipeStep]:
+        stmt = select(RecipeStep).where(RecipeStep.recipe_id == recipe_id).order_by(RecipeStep.position.asc())
+        result = await session.execute(stmt)
+        return list(result.scalars().all())

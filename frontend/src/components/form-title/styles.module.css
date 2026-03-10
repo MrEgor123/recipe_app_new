@@ -1,15 +1,17 @@
-.formTitle {
-  font-family: "SF Pro Display", sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 54px;
-  line-height: 110%;
-  color: #000000;
-  margin: 0 0 36px;
+.formTitle{
+  font-family:"SF Pro Display", sans-serif;
+  font-style:normal;
+  font-weight:800;
+  font-size:40px;
+  line-height:1.05;
+  color:var(--text);
+  letter-spacing:-0.03em;
+  margin:0 0 8px;
+  text-align:center;
 }
 
-@media screen and (max-width: 860px) {
-  .formTitle {
-    font-size: 34px;
+@media screen and (max-width:860px){
+  .formTitle{
+    font-size:32px;
   }
 }

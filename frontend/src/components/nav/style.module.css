@@ -1,76 +1,81 @@
-.nav {
-  width: 100%;
-}
-
-.nav__container {
+.nav{
   display: flex;
-  justify-content: space-between;
-  height: 100%;
   align-items: center;
-}
-
-.nav__orders {
-  display: none;
-  text-decoration: none;
-}
-
-
-.menuButton {
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
-  display: none;
-}
-
-.menuButton img {
+  justify-content: flex-end;
   width: 100%;
 }
 
-.nav__container-mobile {
+.nav__container{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.menuButton{
+  display: none;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  height: 40px;
+  width: 44px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuButton:hover{
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-strong);
+}
+
+.menuIcon{
+  width: 18px;
+  height: 2px;
+  background: var(--text);
+  position: relative;
+  display: block;
+}
+
+.menuIcon:before,
+.menuIcon:after{
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 2px;
+  background: var(--text);
+}
+
+.menuIcon:before{ top: -6px; }
+.menuIcon:after{ top: 6px; }
+
+.nav__container-mobile{
   display: none;
   position: absolute;
-  top: 100px;
-  left: 0;
-  width: 100%;
-  background: #FFF;
-  border-radius: 8px;
-  padding: 20px 50px;
-  z-index: 3;
-  justify-content: space-between; 
+  top: 72px;
+  right: 16px;
+
+  width: min(420px, calc(100% - 32px));
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(10px);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  z-index: 20;
 }
 
-.nav__container-mobile_visible {
-  display: flex;
+.nav__container{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:14px;
+
+  height:40px;        /* добавили */
 }
 
-@media screen and (max-width: 770px) {
-  .menuButton {
-    display: block
-  }
-
-  .nav__orders {
-    display: block;
-  }
-
-  .nav {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .nav__container {
-    display: none;
-  }
+@media screen and (max-width: 770px){
+  .nav__container{ display: none; }
+  .menuButton{ display: inline-flex; }
 }
-
-@media screen and (max-width: 610px) {
-  .nav__container-mobile {
-    flex-direction: column-reverse;
-  }
-
-  .nav__container-mobile {
-    padding: 20px;
-  }
-
-}
-

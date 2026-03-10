@@ -8,5 +8,5 @@ class Ingredient(Base):
     __tablename__ = "ingredients"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(60), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
     unit: Mapped[str] = mapped_column(String(32), nullable=False)

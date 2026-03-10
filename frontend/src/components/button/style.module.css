@@ -1,67 +1,58 @@
-.button {
-  font-family: "SF Pro Display", sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 18px;
-  background: none;
-  border-radius: 10px;
-  padding: 0px 24px;
-  height: 44px;
-  text-decoration: none;
-  border: 1.4px solid transparent;
-  transition: background 0.2s;
-  outline: none;
-  user-select: none;
-  line-height: 44px;
-  cursor: pointer;
-  width: max-content;
-  box-sizing: border-box;
+.button{
+  font-family:"SF Pro Display", sans-serif;
+  font-weight:600;
+  font-size:16px;
+
+  background:var(--surface-2);
+  color:var(--text);
+
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+
+  padding:0 16px;
+  height:40px;
+  line-height:40px;
+
+  cursor:pointer;
+  user-select:none;
+  transition:background .15s,border-color .15s,box-shadow .15s,transform .05s;
 }
 
-.button:active {
-  box-shadow: 0 0 7px #ddd;
+.button:hover{
+  border-color:var(--border-strong);
+  box-shadow:var(--shadow-sm);
 }
 
-.button_style_light {
-  border: 1.4px solid #000;
-  background: #fff;
-  color: #000;
+.button:active{
+  transform:translateY(1px);
 }
 
-.button_style_light:hover {
-  background: #000;
-  color: #fff;
-  border: 1.4px solid transparent;
+.button_style_light{
+  background:var(--surface-2);
+  color:var(--text);
+  border:1px solid var(--border);
 }
 
-.button_style_dark {
-  background: #000;
-  color: #fff;
+.button_style_dark{
+  background:var(--accent);
+  color:#fff;
+  border:1px solid transparent;
 }
 
-.button_style_dark:hover {
-  background: #fff;
-  color: #000;
-  border: 1.4px solid #000;
+.button_style_dark:hover{
+  box-shadow:var(--shadow-md);
 }
 
-.button_disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.button_style_none{
+  padding:0;
+  height:auto;
+  line-height:1;
+  border:none;
+  background:transparent;
+  box-shadow:none;
 }
 
-.button_style_none {
-  padding: 0;
-}
-
-.button_style_none:active {
-  box-shadow: none;
-}
-
-@media screen and (max-width: 730px) {
-  .button {
-    height: 40px;
-    line-height: 40px;
-    font-size: 16px;
-  }
+.button_disabled{
+  opacity:.55;
+  cursor:not-allowed;
 }

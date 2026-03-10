@@ -1,3 +1,4 @@
+# alembic/env.py
 import asyncio
 from logging.config import fileConfig
 
@@ -5,7 +6,8 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
-from app.models import Base  # noqa: F401; ensures models are imported
+from app.models.base import Base  # <-- ВАЖНО: именно отсюда
+import app.models  # noqa: F401  <-- ВАЖНО: форс-импорт моделей (RecipeStep тоже)
 
 config = context.config
 

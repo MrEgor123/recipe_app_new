@@ -1,4 +1,32 @@
+# macOS
+.DS_Store
 
-# node
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# virtualenv
+.venv/
+venv/
+
+# env
+.env
+.env.*
+
+# backend build artifacts
+*.egg-info/
+
+# frontend
 frontend/node_modules/
-**/node_modules/
+frontend/node_modules_old/
+frontend/build/
+frontend/result_build/
+
+# editors
+.idea/
+.vscode/
+
+# logs
+*.log

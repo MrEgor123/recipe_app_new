@@ -1,5 +1,6 @@
 import styles from './style.module.css'
 import Container from '../container'
+import LogoIcon from '../../images/recepto-icon.png'
 
 const Footer = () => {
   return (
@@ -7,14 +8,18 @@ const Footer = () => {
       <Container>
         <div className={styles.footerContent}>
           <div className={styles.brand}>
-            <div className={styles.brandTitle}>Recipe App</div>
-            <div className={styles.brandSubtitle}>минималистичная книга рецептов</div>
+            <img
+              src={LogoIcon}
+              alt="Recepto"
+              className={styles.brandIcon}
+            />
+            <div className={styles.brandTitle}>Recepto</div>
           </div>
 
           <nav className={styles.links} aria-label="Навигация в подвале">
             <a className={styles.link} href="/">рецепты</a>
             <a className={styles.link} href="/favorites">избранное</a>
-            <a className={styles.link} href="/shopping-cart">покупки</a>
+            <a className={styles.link} href="/cart">покупки</a>
             <a className={styles.link} href="/subscriptions">подписки</a>
           </nav>
 

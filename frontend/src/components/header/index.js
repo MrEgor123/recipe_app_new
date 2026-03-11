@@ -1,6 +1,7 @@
 import styles from './style.module.css'
 import { Nav, LinkComponent } from '../index.js'
 import Container from '../container'
+import LogoIcon from '../../images/recepto-icon.png'
 
 const Header = ({ loggedIn, onSignOut, orders }) => {
   return (
@@ -12,8 +13,12 @@ const Header = ({ loggedIn, onSignOut, orders }) => {
             href="/"
             title={
               <div className={styles.brand}>
-                <div className={styles.brandTitle}>Recipe App</div>
-                <div className={styles.brandSubtitle}>минималистичная книга рецептов</div>
+                <img
+                  src={LogoIcon}
+                  alt="Recepto"
+                  className={styles.brandIcon}
+                />
+                <span className={styles.brandTitle}>Recepto</span>
               </div>
             }
           />

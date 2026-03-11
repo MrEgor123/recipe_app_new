@@ -1,11 +1,22 @@
-import { Card, Title, Pagination, CardList, Container, Main, CheckboxGroup } from '../../components'
+import {
+  Card,
+  Title,
+  Pagination,
+  CardList,
+  Container,
+  Main,
+  CheckboxGroup
+} from '../../components'
 import styles from './styles.module.css'
 import { useRecipes } from '../../utils/index.js'
-import { useEffect } from 'react'
+import { useEffect, useContext } from 'react'
 import api from '../../api'
 import MetaTags from 'react-meta-tags'
+import { AuthContext } from '../../contexts'
 
 const HomePage = ({ updateOrders }) => {
+  const authContext = useContext(AuthContext)
+
   const {
     recipes,
     setRecipes,
@@ -21,18 +32,23 @@ const HomePage = ({ updateOrders }) => {
   } = useRecipes()
 
   const getRecipes = ({ page = 1, tags }) => {
-    api.getRecipes({ page, tags }).then(res => {
-      const { results, count } = res
-      setRecipes(results)
-      setRecipesCount(count)
-    })
+    api.getRecipes({ page, tags })
+      .then(res => {
+        const { results, count } = res
+        setRecipes(results)
+        setRecipesCount(count)
+      })
+      .catch(() => {
+        setRecipes([])
+        setRecipesCount(0)
+      })
   }
 
-  useEffect(_ => {
+  useEffect(() => {
     getRecipes({ page: recipesPage, tags: tagsValue })
-  }, [recipesPage, tagsValue])
+  }, [recipesPage, tagsValue, authContext])
 
-  useEffect(_ => {
+  useEffect(() => {
     api.getTags().then(tags => {
       setTagsValue(tags.map(tag => ({ ...tag, value: false })))
     })
@@ -43,14 +59,13 @@ const HomePage = ({ updateOrders }) => {
       <Container>
         <MetaTags>
           <title>Рецепты</title>
-          <meta name="description" content="Recipe App - Рецепты" />
+          <meta name="description" content="Recepto - Рецепты" />
           <meta property="og:title" content="Рецепты" />
         </MetaTags>
 
         <div className={styles.title}>
           <div className={styles.titleLeft}>
             <Title title="Рецепты" />
-            <div className={styles.titleHint}>выбирай теги и собирай покупки</div>
           </div>
 
           <div className={styles.titleRight}>

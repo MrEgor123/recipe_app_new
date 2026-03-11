@@ -1,7 +1,7 @@
-import styles from "./styles.module.css";
 import { Icons, Button } from "..";
 import DefaultImage from "../../images/avatar-icon.png";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export const AvatarPopup = ({
   onSubmit,
@@ -11,101 +11,248 @@ export const AvatarPopup = ({
   onChange,
   avatar,
 }) => {
-  const [currentFile, setCurrentFile] = useState(avatar);
+  const [currentFile, setCurrentFile] = useState(avatar || null);
   const [error, setError] = useState("");
   const fileInput = useRef(null);
 
   useEffect(() => {
-    if (avatar) {
-      setCurrentFile(avatar);
-    }
+    setCurrentFile(avatar || null);
   }, [avatar]);
 
   const getBase64 = (file) => {
-    const reader = new FileReader();
+    if (!file) return;
 
+    const reader = new FileReader();
     const fileNameArr = file.name.split(".");
-    const format = fileNameArr[fileNameArr.length - 1];
+    const format = fileNameArr[fileNameArr.length - 1]?.toLowerCase();
 
     if (fileSize && file.size / (1024 * 1024) > fileSize) {
       return setError(`Загрузите файл размером не более ${fileSize}Мб`);
     }
+
     if (fileTypes && !fileTypes.includes(format)) {
       return setError(
         `Загрузите файл одного из типов: ${fileTypes.join(", ")}`
       );
     }
+
     reader.readAsDataURL(file);
     reader.onload = function () {
       setCurrentFile(reader.result);
       onChange(reader.result);
     };
-    reader.onerror = function (error) {
-      console.log("Error: ", error);
+    reader.onerror = function (err) {
+      console.log("Error: ", err);
     };
   };
 
-  return (
+  const popupNode = (
     <div
-      className={styles.popup}
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose?.();
-        }
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        background: "rgba(15,23,42,.22)",
+        backdropFilter: "blur(4px)",
       }}
     >
-      <div className={styles.popup__content}>
-        <div className={styles.popup__close} onClick={onClose}>
-          <Icons.PopupClose />
-        </div>
-        <h3 className={styles.popup__title}>Аватар</h3>
-        <div
-          className={styles.image}
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: "420px",
+          background: "#fff",
+          border: "1px solid #e5e7eb",
+          borderRadius: "24px",
+          boxShadow: "0 12px 30px rgba(15,23,42,.14)",
+          padding: "28px 28px 24px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-start",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Закрыть"
           style={{
-            backgroundImage: `url(${currentFile || DefaultImage})`,
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            width: "32px",
+            height: "32px",
+            border: "none",
+            background: "transparent",
+            borderRadius: "999px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <div className={styles.imageOverlay}>
-            <Button
-              className={styles.button_overlay}
-              clickHandler={(_) => {
-                fileInput.current.click();
+          <Icons.PopupClose />
+        </button>
+
+        <h3
+          style={{
+            margin: "0 0 18px",
+            fontFamily: '"SF Pro Display", sans-serif',
+            fontSize: "28px",
+            fontWeight: 700,
+            lineHeight: 1.2,
+            color: "#0f172a",
+            textAlign: "center",
+          }}
+        >
+          Аватар
+        </h3>
+
+        <div
+          style={{
+            width: "220px",
+            height: "220px",
+            borderRadius: "50%",
+            overflow: "hidden",
+            position: "relative",
+            border: "1px solid #e5e7eb",
+            background: "#f8fafc",
+            flexShrink: 0,
+            margin: 0,
+          }}
+        >
+          <img
+            src={currentFile || DefaultImage}
+            alt="Аватар"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center center",
+              margin: 0,
+              padding: 0,
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+              background: "rgba(15,23,42,.35)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              aria-label="Загрузить аватар"
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "999px",
+                border: "1px solid rgba(255,255,255,.9)",
+                background: "rgba(255,255,255,.14)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                padding: 0,
               }}
             >
               <Icons.AddAvatarIcon />
-            </Button>
+            </button>
+
             {currentFile && (
-              <Button
-                className={styles.button_overlay}
-                clickHandler={() => {
+              <button
+                type="button"
+                onClick={() => {
                   setCurrentFile(null);
                   onChange(null);
-                  fileInput.current.value = "";
+                  if (fileInput.current) fileInput.current.value = "";
+                }}
+                aria-label="Удалить аватар"
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "999px",
+                  border: "1px solid rgba(255,255,255,.9)",
+                  background: "rgba(255,255,255,.14)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  padding: 0,
                 }}
               >
                 <Icons.DeleteAvatarIcon />
-              </Button>
+              </button>
             )}
           </div>
         </div>
+
         <input
-          className={styles.fileInput}
           type="file"
           ref={fileInput}
+          style={{ display: "none" }}
           onChange={(e) => {
             setError("");
-            const file = e.target.files[0];
-            getBase64(file);
+            getBase64(e.target.files?.[0]);
           }}
         />
-        {error && <p className={styles.error}>{error}</p>}
-        <p className={styles.info}>{`формат ${fileTypes.join(
-          "/"
-        )}, размер до ${fileSize}мб`}</p>
-        <Button className={styles.popup__button} clickHandler={onSubmit}>
+
+        {error && (
+          <p
+            style={{
+              margin: "14px 0 0",
+              fontSize: "14px",
+              fontWeight: 600,
+              lineHeight: 1.4,
+              color: "#ff3b30",
+              textAlign: "center",
+            }}
+          >
+            {error}
+          </p>
+        )}
+
+        <p
+          style={{
+            margin: "16px 0 0",
+            fontSize: "14px",
+            fontWeight: 500,
+            lineHeight: 1.4,
+            color: "#64748b",
+            textAlign: "center",
+          }}
+        >
+          {`формат ${fileTypes.join("/")}, размер до ${fileSize}мб`}
+        </p>
+
+        <Button
+          modifier="style_dark"
+          clickHandler={onSubmit}
+          style={{
+            marginTop: "18px",
+            minHeight: "42px",
+            padding: "0 20px",
+          }}
+        >
           Сохранить
         </Button>
       </div>
     </div>
   );
+
+  return createPortal(popupNode, document.body);
 };

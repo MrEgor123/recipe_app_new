@@ -37,6 +37,25 @@ function App() {
     submitError: "",
   });
 
+  const history = useHistory();
+
+  const translateAuthError = (err) => {
+    const raw = Object.values(err || {}).flat().join(", ");
+
+    const map = {
+      "Unable to log in with provided credentials":
+        "Неверные данные для входа. Проверьте email и пароль",
+      "Unable to log in with provided credentials.":
+        "Неверные данные для входа. Проверьте email и пароль",
+      "No active account found with the given credentials":
+        "Аккаунт с такими данными не найден",
+      "This field may not be blank.": "Поле не должно быть пустым",
+      "This field is required.": "Обязательное поле",
+    };
+
+    return map[raw] || "Не удалось войти. Проверьте введённые данные";
+  };
+
   const registration = ({
     email,
     password,
@@ -61,7 +80,7 @@ function App() {
   const changePassword = ({ new_password, current_password }) => {
     api
       .changePassword({ new_password, current_password })
-      .then((res) => {
+      .then(() => {
         history.push("/signin");
       })
       .catch((err) => {
@@ -77,7 +96,7 @@ function App() {
       .changeAvatar({ file })
       .then((res) => {
         setUser({ ...user, avatar: res.avatar });
-        history.push(`/recipes`);
+        history.push("/recipes");
       })
       .catch((err) => {
         const { non_field_errors } = err;
@@ -88,6 +107,21 @@ function App() {
         if (errors) {
           alert(errors.join(", "));
         }
+      });
+  };
+
+  const getOrders = () => {
+    api
+      .getRecipes({
+        page: 1,
+        is_in_shopping_cart: Number(true),
+      })
+      .then((res) => {
+        const { count } = res;
+        setOrders(count);
+      })
+      .catch(() => {
+        setOrders(0);
       });
   };
 
@@ -107,7 +141,7 @@ function App() {
               setLoggedIn(true);
               getOrders();
             })
-            .catch((err) => {
+            .catch(() => {
               setLoggedIn(false);
               history.push("/signin");
             });
@@ -116,10 +150,9 @@ function App() {
         }
       })
       .catch((err) => {
-        const errors = Object.values(err);
-        if (errors) {
-          setAuthError({ submitError: errors.join(", ") });
-        }
+        setAuthError({
+          submitError: translateAuthError(err),
+        });
         setLoggedIn(false);
       });
   };
@@ -129,7 +162,7 @@ function App() {
       .resetPassword({
         email,
       })
-      .then((res) => {
+      .then(() => {
         history.push("/signin");
       })
       .catch((err) => {
@@ -142,36 +175,27 @@ function App() {
   };
 
   const loadSingleItem = ({ id, callback }) => {
-    setTimeout((_) => {
+    setTimeout(() => {
       callback();
     }, 3000);
   };
 
-  const history = useHistory();
   const onSignOut = () => {
     api
       .signout()
-      .then((res) => {
+      .then(() => {
         localStorage.removeItem("token");
+        setUser({});
+        setOrders(0);
         setLoggedIn(false);
+        history.push("/recipes");
       })
-      .catch((err) => {
-        const errors = Object.values(err);
-        if (errors) {
-          alert(errors.join(", "));
-        }
-      });
-  };
-
-  const getOrders = () => {
-    api
-      .getRecipes({
-        page: 1,
-        is_in_shopping_cart: Number(true),
-      })
-      .then((res) => {
-        const { count } = res;
-        setOrders(count);
+      .catch(() => {
+        localStorage.removeItem("token");
+        setUser({});
+        setOrders(0);
+        setLoggedIn(false);
+        history.push("/recipes");
       });
   };
 
@@ -186,7 +210,7 @@ function App() {
     }
   };
 
-  useEffect((_) => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       return api
@@ -196,7 +220,7 @@ function App() {
           setLoggedIn(true);
           getOrders();
         })
-        .catch((err) => {
+        .catch(() => {
           setLoggedIn(false);
           history.push("/recipes");
         });
@@ -204,14 +228,6 @@ function App() {
       setLoggedIn(false);
     }
   }, []);
-
-  // useEffect(() => {
-  //   document.addEventListener('keydown', function(event) {
-  //     if (event.ctrlKey && event.shiftKey && event.key === 'z') {
-  //       alert('зиги - добар пас!');
-  //     }
-  //   });
-  // }, [])
 
   if (loggedIn === null) {
     return <div className={styles.loading}>Загрузка...</div>;
@@ -318,6 +334,7 @@ function App() {
                 setSubmitError={setAuthError}
               />
             </Route>
+
             <Route exact path="/signup">
               <SignUp
                 onSignUp={registration}
@@ -325,9 +342,11 @@ function App() {
                 setSubmitError={setRegistrError}
               />
             </Route>
+
             <Route exact path="/">
               <Redirect to="/recipes" />
             </Route>
+
             <Route path="*">
               <NotFound />
             </Route>

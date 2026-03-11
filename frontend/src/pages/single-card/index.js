@@ -92,7 +92,7 @@ const SingleCard = ({ updateOrders }) => {
       <Container>
         <MetaTags>
           <title>{name}</title>
-          <meta name="description" content={`Recipe App - ${name}`} />
+          <meta name="description" content={`Recepto - ${name}`} />
           <meta property="og:title" content={name} />
         </MetaTags>
 
@@ -165,33 +165,35 @@ const SingleCard = ({ updateOrders }) => {
                     className={styles.authorLink}
                   />
                 </div>
-
-                {(userContext || {}).id !== author.id && authContext && (
-                  <>
-                    <span className={styles.divider} />
-                    <Button
-                      className={styles.subscribeBtn}
-                      modifier="style_light"
-                      clickHandler={() => {
-                        handleSubscribe({
-                          author_id: author.id,
-                          toSubscribe: !author.is_subscribed,
-                        });
-                      }}
-                      data-tooltip-id="tooltip-subscribe"
-                      data-tooltip-content={
-                        author.is_subscribed
-                          ? "Отписаться от автора"
-                          : "Подписаться на автора"
-                      }
-                      data-tooltip-place="bottom"
-                    >
-                      <Icons.AddUser />
-                    </Button>
-                    <Tooltip id="tooltip-subscribe" />
-                  </>
-                )}
               </div>
+
+              {(userContext || {}).id !== author.id && authContext && (
+                <div className={styles.subscribeRow}>
+                  <Button
+                    className={cn(styles.subscribeBtn, {
+                      [styles.subscribeBtnActive]: author.is_subscribed,
+                    })}
+                    modifier={author.is_subscribed ? "style_dark" : "style_light"}
+                    clickHandler={() => {
+                      handleSubscribe({
+                        author_id: author.id,
+                        toSubscribe: !author.is_subscribed,
+                      });
+                    }}
+                    data-tooltip-id="tooltip-subscribe"
+                    data-tooltip-content={
+                      author.is_subscribed
+                        ? "Отписаться от автора"
+                        : "Подписаться на автора"
+                    }
+                    data-tooltip-place="bottom"
+                  >
+                    <Icons.AddUser />
+                    {author.is_subscribed ? "Вы подписаны" : "Подписаться"}
+                  </Button>
+                  <Tooltip id="tooltip-subscribe" />
+                </div>
+              )}
 
               <div className={styles.primaryRow}>
                 {authContext && (

@@ -1,89 +1,119 @@
-.title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
+.title{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:24px;
+  width:100%;
+  margin-top:10px;
+  margin-bottom:22px;
 }
 
-.container {
-  text-align: left;
+.container{
+  text-align:left;
 }
 
-.titleText {
-  font-size: 54px;
-  margin: 0;
+.titleTextBox{
+  min-width:0;
+  padding-top:6px;
 }
 
-.user {
-  display: flex;
-  margin-bottom: 36px;
-  align-items: center;
+.titleText{
+  font-size:54px;
+  margin:0;
+  line-height:1.04;
+  letter-spacing:-0.03em;
 }
 
-.userAvatar {
-  min-width: 60px;
-  height: 60px;
-  border-radius: 60px;
-  overflow: hidden;
-  background-image: url('../../images/userpic-icon.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 24px;
+.user{
+  display:flex;
+  margin-bottom:28px;
+  align-items:center;
 }
 
-.buttonSubscribe {
-  margin-bottom: 46px;
-  display: flex;
-  align-items: center;
+.userAvatar{
+  min-width:60px;
+  width:60px;
+  height:60px;
+  border-radius:60px;
+  overflow:hidden;
+  background-image:url('../../images/userpic-icon.jpg');
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-position:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-right:24px;
+  box-shadow:var(--shadow-sm);
 }
 
-
-
-.buttonSubscribe svg {
-  margin-right: 8px;
+.buttonSubscribe{
+  margin-bottom:24px;
+  display:inline-flex;
+  align-items:center;
 }
 
-.buttonSubscribe g {
-  stroke: #000;
+.buttonSubscribe svg{
+  margin-right:8px;
 }
 
-.buttonSubscribe.buttonSubscribeActive g {
-  stroke: #FFF;
+.buttonSubscribe g{
+  stroke:#000;
 }
 
-.buttonSubscribe.buttonSubscribeActive:hover g {
-  stroke: #000;
+.buttonSubscribe.buttonSubscribeActive g{
+  stroke:#FFF;
 }
 
-.buttonSubscribe:hover g {
-  stroke: #FFF;
+.buttonSubscribe.buttonSubscribeActive:hover g{
+  stroke:#000;
 }
 
-@media screen and (max-width: 770px) {
-  .title {
-    display: block;
+.buttonSubscribe:hover g{
+  stroke:#FFF;
+}
+
+.title :global(.checkboxGroup),
+.title > div:last-child{
+  margin-top:20px;
+}
+
+@media screen and (max-width: 950px){
+  .title{
+    display:block;
+    margin-top:6px;
+    margin-bottom:20px;
   }
 
-  .titleText {
-    font-size: 34px;
-    margin-bottom: 0px;
+  .titleTextBox{
+    padding-top:0;
   }
 
-  .userAvatar {
-    min-width: 55px;
-    height: 55px;
-    border-radius: 55px;
-    margin-right: 20px;
+  .title :global(.checkboxGroup),
+  .title > div:last-child{
+    margin-top:12px;
+  }
+}
+
+@media screen and (max-width: 770px){
+  .titleText{
+    font-size:34px;
+    margin-bottom:0;
   }
 
-  .user {
-    margin-bottom: 23px;
+  .userAvatar{
+    min-width:55px;
+    width:55px;
+    height:55px;
+    border-radius:55px;
+    margin-right:20px;
   }
 
-  .buttonSubscribe {
-    width: 100%;
+  .user{
+    margin-bottom:20px;
+  }
+
+  .buttonSubscribe{
+    width:100%;
   }
 }

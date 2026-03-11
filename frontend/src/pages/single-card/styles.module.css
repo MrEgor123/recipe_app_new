@@ -1,29 +1,32 @@
 .page{
-  padding:18px 0 16px;
+  padding:22px 0 36px;
 }
 
 .layout{
   display:grid;
-  grid-template-columns:520px 1fr;
-  gap:36px;
+  grid-template-columns:minmax(420px, 520px) minmax(420px, 1fr);
+  gap:44px;
   align-items:start;
 }
 
 .media{
-  border-radius:var(--radius-lg);
-  overflow:hidden;
-  background:var(--surface-2);
+  width:100%;
 }
 
 .image{
   width:100%;
   display:block;
-  aspect-ratio:4/3;
+  aspect-ratio:4 / 3;
   object-fit:cover;
+  border-radius:26px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  box-shadow:var(--shadow-sm);
 }
 
 .content{
   min-width:0;
+  text-align:left;
   padding-top:4px;
 }
 
@@ -31,30 +34,34 @@
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
-  gap:16px;
+  gap:18px;
+  margin-bottom:18px;
 }
 
 .title{
   margin:0;
-  font-size:40px;
-  line-height:1.05;
+  font-size:42px;
+  line-height:1.04;
   font-weight:800;
   letter-spacing:-0.03em;
   color:var(--text);
+  text-align:left;
 }
 
 .actions{
   display:flex;
   align-items:center;
   gap:10px;
+  flex-shrink:0;
 }
 
 .iconBtn{
-  width:44px !important;
-  height:44px !important;
+  width:46px !important;
+  height:46px !important;
+  min-width:46px !important;
   border-radius:999px !important;
   border:1px solid var(--border) !important;
-  background:#fff !important;
+  background:var(--surface-2) !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -90,26 +97,26 @@
   flex-wrap:wrap;
   align-items:center;
   gap:12px;
-  margin-top:16px;
+  margin-bottom:18px;
 }
 
 .metaItem{
   display:inline-flex;
   align-items:center;
-  gap:8px;
-  font-size:15px;
+  gap:10px;
+  font-size:16px;
   color:var(--muted);
 }
 
 .divider{
   width:1px;
-  height:18px;
+  height:20px;
   background:var(--border);
 }
 
 .authorAvatar{
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   border-radius:999px;
   background-size:cover;
   background-position:center;
@@ -121,55 +128,100 @@
 .authorLink{
   color:var(--text);
   text-decoration:none;
-  font-weight:500;
+  font-weight:600;
 }
 
 .authorLink:hover{
   color:var(--accent);
 }
 
+.subscribeRow{
+  margin-top:-6px;
+  margin-bottom:18px;
+}
+
 .subscribeBtn{
-  width:44px;
-  min-width:44px;
-  height:44px;
-  padding:0 !important;
+  min-height:42px;
+  padding:0 14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  font-size:15px;
+}
+
+.subscribeBtn svg,
+.subscribeBtn path{
+  flex-shrink:0;
+}
+
+.subscribeBtnActive{
+  box-shadow:var(--shadow-sm);
 }
 
 .primaryRow{
   display:flex;
   flex-wrap:wrap;
-  gap:12px;
+  gap:14px;
   align-items:center;
-  margin-top:18px;
+  margin-bottom:32px;
 }
 
 .primaryBtn{
-  min-height:42px;
+  min-height:48px;
+  padding:0 18px;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  font-size:17px;
+}
+
+.primaryBtn svg,
+.primaryBtn path{
+  flex-shrink:0;
 }
 
 .editBtn{
-  height:42px;
+  min-height:48px;
+  padding:0 18px;
+  font-size:16px;
 }
 
 .section{
-  margin-top:16px;
+  margin-top:22px;
 }
 
 .card{
-  padding:0;
   border:none;
+  border-radius:0;
   background:transparent;
-  box-shadow:none;
+  padding:0;
 }
 
 .ingredientsCard{
   position:static;
 }
 
-@media screen and (max-width:980px){
+@media screen and (max-width: 1180px){
+  .layout{
+    grid-template-columns:minmax(360px, 460px) minmax(0,1fr);
+    gap:30px;
+  }
+
+  .title{
+    font-size:38px;
+  }
+}
+
+@media screen and (max-width: 920px){
   .layout{
     grid-template-columns:1fr;
-    gap:22px;
+    gap:24px;
+  }
+
+  .media{
+    max-width:760px;
   }
 
   .header{
@@ -178,6 +230,34 @@
   }
 
   .title{
-    font-size:32px;
+    font-size:34px;
+  }
+}
+
+@media screen and (max-width: 640px){
+  .page{
+    padding:16px 0 24px;
+  }
+
+  .title{
+    font-size:30px;
+  }
+
+  .metaRow{
+    gap:10px;
+  }
+
+  .metaItem{
+    font-size:15px;
+  }
+
+  .primaryRow{
+    align-items:stretch;
+  }
+
+  .primaryBtn,
+  .editBtn,
+  .subscribeBtn{
+    width:100%;
   }
 }

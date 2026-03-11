@@ -1,14 +1,15 @@
 .container {
-  position: relative;
   position: fixed;
-  top: 30px;
-  padding: 10px 30px;
+  top: 96px;
+  padding: 12px 18px;
   margin: 0 auto;
   width: fit-content;
-  transition: all 1s;
-  border-radius: 10px;
-  box-shadow: 0 0 10px 5px #777;
+  max-width: 320px;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
   background-color: #fff;
+  z-index: 9998;
 }
 
 .text {
@@ -17,15 +18,16 @@
 
 .closeBtn {
   position: absolute;
-  top: -15px;
-  right: -27px;
+  top: -12px;
+  right: -12px;
   border: none;
-  background: none;
-  width: 24px;
-  height: 24px;
+  background: #fff;
+  width: 28px;
+  height: 28px;
   cursor: pointer;
-  transition: all 0.3s;
-  border-radius: 10px;
+  transition: all 0.2s;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
 }
 
 .closeBtn:hover {

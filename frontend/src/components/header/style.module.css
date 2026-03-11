@@ -1,18 +1,18 @@
 .header{
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  position:sticky;
+  top:0;
+  z-index:10;
 
-  background: rgba(255,255,255,.86);
-  backdrop-filter: blur(10px);
+  background:rgba(255,255,255,.86);
+  backdrop-filter:blur(10px);
 
-  border-bottom: 1px solid var(--border);
+  border-bottom:1px solid var(--border);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 
-  min-height: 72px;
+  min-height:72px;
 }
 
 .headerContent{
@@ -24,29 +24,47 @@
 }
 
 .headerLink{
-  text-align: left;
-  width: fit-content;
-  user-select: none;
+  text-align:left;
+  width:fit-content;
+  user-select:none;
+  display:flex;
+  align-items:center;
+  text-decoration:none;
 }
 
 .brand{
   display:flex;
-  flex-direction:column;
-  gap:2px;
-  padding:6px 0;      /* добавили */
+  align-items:center;
+  gap:12px;
+}
+
+.brandIcon{
+  display:block;
+  width:38px;
+  height:38px;
+  object-fit:contain;
+  flex-shrink:0;
 }
 
 .brandTitle{
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.02em;
-  color: var(--text);
-  line-height: 1.1;
+  font-weight:800;
+  font-size:30px;
+  letter-spacing:-0.03em;
+  line-height:1;
+  color:var(--text);
 }
 
-.brandSubtitle{
-  font-weight: 500;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.2;
+@media screen and (max-width: 768px){
+  .brand{
+  gap:10px;
+  }
+
+  .brandIcon{
+    width:42px;
+    height:42px;
+  }
+
+  .brandTitle{
+    font-size:28px;
+  }
 }

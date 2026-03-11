@@ -1,112 +1,179 @@
 .account{
-  position: relative;
-  display: flex;
-  align-items: center;
-  text-align: left;
+  position:relative;
+  display:flex;
+  align-items:center;
+  text-align:left;
+  margin-left:12px;
+}
+
+.accountTrigger{
+  display:flex;
+  align-items:center;
+  cursor:pointer;
+  user-select:none;
 }
 
 .accountProfile{
-  display: flex;
-  align-items: center;
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-/* скрываем имя/почту в шапке, оставляем только аватар */
 .accountData{
-  display: none;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.accountName{
+  font-weight:700;
+  font-size:15px;
+  line-height:1.15;
+  color:var(--text);
+  white-space:nowrap;
+}
+
+.accountEmail{
+  font-size:13px;
+  line-height:1.2;
+  color:var(--muted);
+  white-space:nowrap;
 }
 
 .accountAvatar{
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  overflow: hidden;
-  margin-left: 12px;
+  position:relative;
+  width:40px;
+  height:40px;
+  border-radius:999px;
+  overflow:hidden;
 
-  background-size: cover;
-  background-repeat: no-repeat;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
 
-  cursor: pointer;
-  border: 1px solid var(--border);
+  border:1px solid var(--border);
+  flex-shrink:0;
 }
 
 .imageOverlay{
-  display: none;
+  display:none;
 }
 
 .accountLinks{
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
+  display:flex;
+  flex-direction:column;
+  margin:0;
+  padding:0;
+  list-style:none;
+  min-width:200px;
 }
 
 .accountControls{
-  display: none;
-  padding: 12px 0 0;
-  position: absolute;
-  top: 42px;
-  right: 0;
-  z-index: 30;
-  flex-direction: column;
+  display:none;
+  padding-top:10px;
+  position:absolute;
+  top:100%;
+  right:0;
+  z-index:30;
+  flex-direction:column;
 }
 
 .account:hover .accountControls{
-  display: flex;
+  display:flex;
 }
 
-.accountControls:before{
-  content: "";
-  display: block;
-  position: absolute;
+.accountControls::before{
+  content:"";
+  display:block;
+  position:absolute;
+  left:0;
+  right:0;
+  top:8px;
+  bottom:0;
 
-  left: 0;
-  right: 0;
-  top: 10px;
-  bottom: 0;
-
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(10px);
-
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background:rgba(255,255,255,.97);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:0 10px 28px rgba(15,23,42,.12);
 }
 
 .accountLinkItem{
-  margin: 0;
-  height: 40px;
-  position: relative;
-  z-index: 2;
+  margin:0;
+  min-height:40px;
+  position:relative;
+  z-index:2;
 
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
 
-  padding: 0 14px;
-  cursor: pointer;
-  color: var(--text);
+  padding:0 14px;
+  cursor:pointer;
+  color:var(--text);
+  font-size:15px;
+}
+
+.accountLinkItem:first-child{
+  padding-top:6px;
+}
+
+.accountLinkItem:last-child{
+  padding-bottom:6px;
 }
 
 .accountLinkItem:hover{
-  background: var(--surface);
+  background:rgba(59,130,246,.05);
 }
 
 .accountLinkIcon{
-  width: 22px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-shrink: 0;
+  width:18px;
+  height:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+
+.accountLinkIcon svg{
+  width:16px;
+  height:16px;
 }
 
 .accountLink{
-  color: inherit;
+  color:inherit;
+  width:100%;
+  font-size:15px;
 }
 
 .accountLinkTitle{
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.accountOrders{
+  margin-right:12px;
+}
+
+@media screen and (max-width: 900px){
+  .accountData{
+    display:none;
+  }
+
+  .accountProfile{
+    gap:0;
+  }
+
+  .account{
+    margin-left:10px;
+  }
+
+  .accountControls{
+    right:-8px;
+  }
+
+  .accountLinks{
+    min-width:184px;
+  }
 }

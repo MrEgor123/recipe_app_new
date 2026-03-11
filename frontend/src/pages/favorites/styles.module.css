@@ -1,12 +1,28 @@
-.title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
+.title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  width:100%;
+  margin-top:4px;
+  margin-bottom:8px;
 }
 
-@media screen and (max-width: 770px) {
-  .title {
-    display: block;
+.title :global(.checkboxGroup),
+.title > div:last-child{
+  margin-top:0;
+  margin-bottom:0;
+}
+
+@media screen and (max-width: 770px){
+  .title{
+    display:block;
+    margin-top:4px;
+    margin-bottom:12px;
+  }
+
+  .title :global(.checkboxGroup),
+  .title > div:last-child{
+    margin-top:8px;
   }
 }

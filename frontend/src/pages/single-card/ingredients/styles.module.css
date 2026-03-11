@@ -1,23 +1,26 @@
 .ingredients{
   margin:0;
+  text-align:left;
 }
 
 .ingredients__title{
-  font-size:24px;
+  font-size:18px;
   font-weight:800;
-  margin:0 0 16px;
+  margin:0 0 12px;
   color:var(--text);
-  letter-spacing:-0.02em;
+  text-align:left;
+  line-height:1.2;
 }
 
 .ingredients__list{
   margin:0;
-  padding-left:20px;
+  padding-left:22px;
+  text-align:left;
 }
 
 .ingredients__list-item{
   margin:10px 0;
   color:var(--text);
-  line-height:1.6;
-  font-size:16px;
+  line-height:1.65;
+  font-size:17px;
 }

@@ -1,5 +1,5 @@
 import styles from "./styles.module.css";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { LinkComponent, Orders } from "../index.js";
 import { AuthContext, UserContext } from "../../contexts";
 import { UserMenu } from "../../configs/navigation";
@@ -8,9 +8,15 @@ import DefaultImage from "../../images/userpic-icon.jpg";
 import { AvatarPopup } from "../avatar-popup";
 import api from "../../api";
 
-const AccountData = ({ userContext, setIsChangeAvatarOpen }) => {
+const AccountData = ({ userContext }) => {
   return (
     <div className={styles.accountProfile}>
+      <div
+        style={{
+          backgroundImage: `url(${userContext.avatar || DefaultImage})`,
+        }}
+        className={styles.accountAvatar}
+      />
       <div className={styles.accountData}>
         <div className={styles.accountName}>
           {userContext.first_name} {userContext.last_name}
@@ -58,30 +64,22 @@ const Account = ({ onSignOut, orders }) => {
         href="/cart"
         title={<Orders orders={orders} />}
       />
-      <div
-        style={{
-          "background-image": `url(${userContext.avatar || DefaultImage})`,
-        }}
-        className={styles.accountAvatar}
-        onClick={() => {
-          setIsChangeAvatarOpen(true);
-        }}
-      >
-        <div className={styles.imageOverlay}>
-          <Icons.AddAvatarIcon />
-        </div>
-      </div>
+
       <div className={styles.account}>
-        <AccountData
-          userContext={userContext}
-          setIsChangeAvatarOpen={setIsChangeAvatarOpen}
-        />
+        <div
+          className={styles.accountTrigger}
+          onClick={() => {
+            setIsChangeAvatarOpen(true);
+          }}
+        >
+          <AccountData userContext={userContext} />
+        </div>
 
         <div className={styles.accountControls}>
           <ul className={styles.accountLinks}>
             {UserMenu.map((menuItem) => {
               return (
-                <li className={styles.accountLinkItem}>
+                <li key={menuItem.href} className={styles.accountLinkItem}>
                   <LinkComponent
                     className={styles.accountLink}
                     href={menuItem.href}
@@ -106,6 +104,7 @@ const Account = ({ onSignOut, orders }) => {
           </ul>
         </div>
       </div>
+
       {isChangeAvatarOpen && (
         <AvatarPopup
           info="test"

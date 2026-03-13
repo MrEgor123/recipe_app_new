@@ -38,7 +38,7 @@
   border:1px solid var(--border-strong);
   background:var(--surface-2);
   color:var(--text);
-  transition:border-color .15s,box-shadow .15s,background .15s;
+  transition:border-color .15s, box-shadow .15s, background .15s;
 }
 
 .inputField:focus{
@@ -95,5 +95,38 @@ input::placeholder{
 
   .inputField{
     width:100%;
+  }
+}
+
+@media screen and (max-width: 650px){
+  .input{
+    margin-bottom:18px;
+  }
+
+  .inputLabelText{
+    margin-bottom:8px;
+    font-size:15px;
+    line-height:1.25;
+  }
+
+  .inputField{
+    min-height:44px;
+    padding:11px 12px;
+    font-size:15px;
+    border-radius:12px;
+  }
+
+  .errorBox{
+    gap:6px;
+    margin-top:6px;
+  }
+
+  .error{
+    font-size:13px;
+    line-height:1.35;
+  }
+
+  input::placeholder{
+    font-size:15px;
   }
 }

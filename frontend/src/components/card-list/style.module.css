@@ -1,19 +1,19 @@
-.cardList {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: auto;
-  grid-gap: 40px;
+.cardList{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:28px;
 }
 
-@media screen and (max-width: 1040px) {
-  .cardList {
-    grid-template-columns: repeat(2, 1fr);
+@media screen and (max-width: 1040px){
+  .cardList{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:22px;
   }
 }
 
-@media screen and (max-width: 650px) {
-  .cardList {
-    grid-template-columns: 1fr;
-    grid-gap: 20px;
+@media screen and (max-width: 650px){
+  .cardList{
+    grid-template-columns:1fr;
+    gap:18px;
   }
 }

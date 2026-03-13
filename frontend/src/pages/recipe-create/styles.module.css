@@ -229,3 +229,104 @@
     width:100%;
   }
 }
+
+@media screen and (max-width: 650px){
+  .form{
+    padding:14px 12px 96px;
+    border-radius:18px;
+  }
+
+  .checkboxGroup{
+    margin-bottom:18px;
+  }
+
+  .checkboxGroupTags{
+    gap:8px;
+  }
+
+  .ingredients{
+    margin-bottom:18px;
+  }
+
+  .ingredientsInputs{
+    gap:12px;
+  }
+
+  .ingredientsAmountInputContainer{
+    display:grid;
+    grid-template-columns:auto auto auto;
+    justify-content:start;
+    align-items:center;
+    gap:10px;
+  }
+
+  .amountText{
+    font-size:12px;
+    white-space:normal;
+  }
+
+  .ingredientsAmountValue{
+    width:74px;
+    max-width:74px;
+  }
+
+  .measurementUnit{
+    margin-left:0;
+    font-size:13px;
+  }
+
+  .ingredientAdd{
+    margin-top:12px;
+    font-size:15px;
+  }
+
+  .ingredientsAdded{
+    gap:8px;
+    margin-top:10px;
+  }
+
+  .ingredientsAddedItem{
+    padding:7px 12px;
+    max-width:100%;
+  }
+
+  .ingredientsAddedItemTitle{
+    max-width:160px;
+    font-size:14px;
+  }
+
+  .cookingTime{
+    align-items:flex-end;
+    gap:10px;
+    margin-bottom:18px;
+  }
+
+  .ingredientsTimeInput{
+    margin-right:0;
+  }
+
+  .ingredientsTimeValue{
+    width:58px;
+    max-width:58px;
+  }
+
+  .cookingTimeUnit{
+    font-size:14px;
+    margin-bottom:10px;
+  }
+
+  .fileInput{
+    margin-bottom:18px;
+  }
+
+  .button{
+    width:100%;
+    min-height:46px;
+    margin-left:0;
+  }
+
+  .error{
+    font-size:13px;
+    line-height:1.35;
+  }
+}

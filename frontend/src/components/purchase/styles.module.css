@@ -83,16 +83,13 @@
   width:36px;
   height:36px;
   flex-shrink:0;
-
   display:inline-flex;
   align-items:center;
   justify-content:center;
-
   background:var(--surface-2);
   border:1px solid var(--border);
   border-radius:999px;
   cursor:pointer;
-
   transition:background .15s,border-color .15s,box-shadow .15s,transform .05s;
 }
 
@@ -115,11 +112,9 @@
   width:28px;
   height:28px;
   flex-shrink:0;
-
   display:inline-flex;
   align-items:center;
   justify-content:center;
-
   background:transparent;
   border:none;
   cursor:pointer;
@@ -135,7 +130,6 @@
   margin:12px 0 0 88px;
   padding:14px 16px 14px 28px;
   list-style:disc;
-
   border:1px solid var(--border);
   border-radius:16px;
   background:var(--surface-2);
@@ -150,29 +144,57 @@
 
 @media screen and (max-width:660px){
   .purchase{
-    padding:16px 0;
+    padding:14px 0;
   }
 
   .purchaseBody{
     align-items:flex-start;
+    gap:12px;
   }
 
   .purchaseContent{
     align-items:flex-start;
+    gap:12px;
   }
 
   .purchaseImage{
-    width:64px;
-    height:64px;
+    width:58px;
+    height:58px;
     border-radius:14px;
+  }
+
+  .purchaseInfo{
+    gap:4px;
+  }
+
+  .purchaseTopRow{
+    gap:6px;
   }
 
   .purchaseTitle{
     font-size:16px;
+    line-height:1.2;
+  }
+
+  .purchaseText{
+    font-size:12px;
+  }
+
+  .purchaseDelete{
+    width:34px;
+    height:34px;
+    margin-top:2px;
   }
 
   .purchaseIngredients{
     margin-left:0;
-    margin-top:12px;
+    margin-top:10px;
+    padding:12px 14px 12px 24px;
+    border-radius:14px;
+  }
+
+  .purchaseIngredient{
+    font-size:13px;
+    margin:5px 0;
   }
 }

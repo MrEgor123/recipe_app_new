@@ -64,3 +64,17 @@
     width:100%;
   }
 }
+
+@media screen and (max-width: 650px){
+  .textarea{
+    margin-bottom:18px;
+  }
+
+  .textareaField{
+    min-height:120px;
+    max-height:260px;
+    padding:12px 14px;
+    font-size:15px;
+    line-height:1.45;
+  }
+}

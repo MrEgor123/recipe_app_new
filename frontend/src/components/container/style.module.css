@@ -5,8 +5,8 @@
   width:100%;
 }
 
-@media screen and (max-width: 730px) {
-  .container {
-    padding: 0 20px;
+@media screen and (max-width: 730px){
+  .container{
+    padding:0 14px;
   }
 }

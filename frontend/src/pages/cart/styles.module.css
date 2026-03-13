@@ -1,7 +1,14 @@
 .cart{
   text-align:left;
+  padding:6px 0 28px;
 }
 
 .container{
   margin-bottom:0;
+}
+
+@media screen and (max-width: 650px){
+  .cart{
+    padding:4px 0 96px;
+  }
 }

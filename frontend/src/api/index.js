@@ -22,9 +22,9 @@ class Api {
           const a = document.createElement("a");
           a.href = url;
           a.download = "shopping-list";
-          document.body.appendChild(a); // we need to append the element to the dom -> otherwise it will not work in firefox
+          document.body.appendChild(a);
           a.click();
-          a.remove(); //afterwards we remove the element again
+          a.remove();
         });
       }
       reject();
@@ -141,6 +141,7 @@ class Api {
           .map((tag) => `&tags=${tag.slug}`)
           .join("")
       : "";
+
     return fetch(
       `/api/recipes/?page=${page}&limit=${limit}${
         author ? `&author=${author}` : ""
@@ -160,11 +161,63 @@ class Api {
   getRecipe({ recipe_id }) {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Token ${token}` } : {};
+
     return fetch(`/api/recipes/${recipe_id}/`, {
       method: "GET",
       headers: {
         ...this._headers,
         ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getRecipeComments({ recipe_id }) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Token ${token}` } : {};
+
+    return fetch(`/api/recipes/${recipe_id}/comments/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  createRecipeComment({ recipe_id, text, parent_id = null }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/recipes/${recipe_id}/comments/`, {
+      method: "POST",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({ text, parent_id }),
+    }).then(this.checkResponse);
+  }
+
+  patchComment({ comment_id, text }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/comments/${comment_id}/`, {
+      method: "PATCH",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({ text }),
+    }).then(this.checkResponse);
+  }
+
+  deleteComment({ comment_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/comments/${comment_id}/`, {
+      method: "DELETE",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
       },
     }).then(this.checkResponse);
   }
@@ -178,6 +231,7 @@ class Api {
     ingredients = [],
   }) {
     const token = localStorage.getItem("token");
+
     return fetch("/api/recipes/", {
       method: "POST",
       headers: {
@@ -199,8 +253,8 @@ class Api {
     { name, recipe_id, image, tags, cooking_time, text, ingredients },
     wasImageUpdated
   ) {
-    // image was changed
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/${recipe_id}/`, {
       method: "PATCH",
       headers: {
@@ -221,6 +275,7 @@ class Api {
 
   addToFavorites({ id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/${id}/favorite/`, {
       method: "POST",
       headers: {
@@ -232,6 +287,7 @@ class Api {
 
   removeFromFavorites({ id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/${id}/favorite/`, {
       method: "DELETE",
       headers: {
@@ -253,6 +309,7 @@ class Api {
   getUser({ id }) {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Token ${token}` } : {};
+
     return fetch(`/api/users/${id}/`, {
       method: "GET",
       headers: {
@@ -264,6 +321,7 @@ class Api {
 
   getUsers({ page = 1, limit = 6 }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/users/?page=${page}&limit=${limit}`, {
       method: "GET",
       headers: {
@@ -277,6 +335,7 @@ class Api {
 
   getSubscriptions({ page, limit = 6, recipes_limit = 3 }) {
     const token = localStorage.getItem("token");
+
     return fetch(
       `/api/users/subscriptions/?page=${page}&limit=${limit}&recipes_limit=${recipes_limit}`,
       {
@@ -291,6 +350,7 @@ class Api {
 
   deleteSubscriptions({ author_id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/users/${author_id}/subscribe/`, {
       method: "DELETE",
       headers: {
@@ -302,6 +362,7 @@ class Api {
 
   subscribe({ author_id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/users/${author_id}/subscribe/`, {
       method: "POST",
       headers: {
@@ -312,8 +373,8 @@ class Api {
   }
 
   // ingredients
+
   getIngredients({ name }) {
-    const token = localStorage.getItem("token");
     return fetch(`/api/ingredients/?name=${name}`, {
       method: "GET",
       headers: {
@@ -323,6 +384,7 @@ class Api {
   }
 
   // tags
+
   getTags() {
     return fetch(`/api/tags/`, {
       method: "GET",
@@ -334,6 +396,7 @@ class Api {
 
   addToOrders({ id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/${id}/shopping_cart/`, {
       method: "POST",
       headers: {
@@ -345,6 +408,7 @@ class Api {
 
   removeFromOrders({ id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/${id}/shopping_cart/`, {
       method: "DELETE",
       headers: {
@@ -356,6 +420,7 @@ class Api {
 
   deleteRecipe({ recipe_id }) {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/${recipe_id}/`, {
       method: "DELETE",
       headers: {
@@ -367,6 +432,7 @@ class Api {
 
   downloadFile() {
     const token = localStorage.getItem("token");
+
     return fetch(`/api/recipes/download_shopping_cart/`, {
       method: "GET",
       headers: {
@@ -374,6 +440,29 @@ class Api {
         authorization: `Token ${token}`,
       },
     }).then(this.checkFileDownloadResponse);
+  }
+  likeComment({ comment_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/comments/${comment_id}/like/`, {
+      method: "POST",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  unlikeComment({ comment_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/comments/${comment_id}/like/`, {
+      method: "DELETE",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
+      },
+    }).then(this.checkResponse);
   }
 }
 

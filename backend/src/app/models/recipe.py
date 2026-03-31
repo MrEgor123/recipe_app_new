@@ -1,5 +1,5 @@
 from sqlalchemy import ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -14,3 +14,5 @@ class Recipe(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     image: Mapped[str | None] = mapped_column(Text, nullable=True)
     cooking_time_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    comments = relationship("Comment", cascade="all, delete-orphan", passive_deletes=True)

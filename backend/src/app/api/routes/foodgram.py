@@ -137,17 +137,28 @@ def _absolute_media_url(request: Request, image_path: str | None) -> str | None:
     if image_path.startswith("http://") or image_path.startswith("https://"):
         return image_path
 
-    base = str(request.base_url).rstrip("/")
-    return f"{base}{image_path}"
+    if image_path.startswith("data:image/"):
+        return image_path
+
+    if image_path.startswith("/media/"):
+        base = str(request.base_url).rstrip("/")
+        return f"{base}{image_path}"
+
+    return image_path
 
 
-async def _user_to_foodgram(session: AsyncSession, user, current_user_id: int | None, request: Request | None = None) -> dict:
+async def _user_to_foodgram(
+    session: AsyncSession,
+    user,
+    current_user_id: int | None,
+    request: Request | None = None,
+) -> dict:
     is_subscribed = False
     if current_user_id is not None and user.id != current_user_id:
         is_subscribed = await subs_repo.is_subscribed(session, user_id=current_user_id, author_id=user.id)
 
     avatar = user.avatar
-    if request is not None and avatar and avatar.startswith("/media/"):
+    if request is not None and avatar:
         avatar = _absolute_media_url(request, avatar)
 
     return {
@@ -215,7 +226,10 @@ async def token_login(payload: dict, session: AsyncSession = Depends(get_db_sess
 
     user = await users_repo.get_by_email(session, str(email))
     if not user or not verify_password(str(password), user.password_hash):
-        return JSONResponse(status_code=400, content={"non_field_errors": ["Unable to log in with provided credentials"]})
+        return JSONResponse(
+            status_code=400,
+            content={"non_field_errors": ["Unable to log in with provided credentials"]},
+        )
 
     return {"auth_token": create_access_token(user.id)}
 
@@ -232,11 +246,16 @@ async def create_user(payload: dict, session: AsyncSession = Depends(get_db_sess
     username = payload.get("username")
     first_name = payload.get("first_name", "")
     last_name = payload.get("last_name", "")
+
     if not email or not password or not username:
-        return JSONResponse(status_code=400, content={"non_field_errors": ["email, username and password required"]})
+        return JSONResponse(
+            status_code=400,
+            content={"non_field_errors": ["email, username and password required"]},
+        )
 
     if await users_repo.get_by_email(session, str(email)):
         return JSONResponse(status_code=400, content={"email": ["User with this email already exists"]})
+
     if await users_repo.get_by_username(session, str(username)):
         return JSONResponse(status_code=400, content={"username": ["User with this username already exists"]})
 
@@ -288,6 +307,7 @@ async def list_subscriptions(
         author_recipes = list((await session.execute(stmt)).scalars().all())
         recipes_count = len(author_recipes)
         author_recipes = author_recipes[:recipes_limit] if recipes_limit else []
+
         recipes_short = [
             {
                 "id": r.id,
@@ -298,11 +318,13 @@ async def list_subscriptions(
             for r in author_recipes
         ]
 
-        results.append({
-            **(await _user_to_foodgram(session, author, user.id, request)),
-            "recipes": recipes_short,
-            "recipes_count": recipes_count,
-        })
+        results.append(
+            {
+                **(await _user_to_foodgram(session, author, user.id, request)),
+                "recipes": recipes_short,
+                "recipes_count": recipes_count,
+            }
+        )
 
     meta = _page_meta(count, page, limit, request)
     return {**meta, "results": results}
@@ -318,6 +340,7 @@ async def get_user(
     user = await users_repo.get_by_id(session, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Not found")
+
     current_user_id = current_user.id if current_user else None
     return await _user_to_foodgram(session, user, current_user_id, request)
 
@@ -348,10 +371,13 @@ async def set_password(
 ):
     current_password = payload.get("current_password")
     new_password = payload.get("new_password")
+
     if not current_password or not new_password:
         raise HTTPException(status_code=400, detail="current_password and new_password required")
+
     if not verify_password(str(current_password), user.password_hash):
         return JSONResponse(status_code=400, content={"current_password": ["Wrong password"]})
+
     await users_repo.update_password_hash(session, user=user, password_hash=hash_password(str(new_password)))
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -367,9 +393,12 @@ async def set_avatar(
     saved_avatar = user.avatar
 
     if avatar:
-        if user.avatar and user.avatar.startswith("/media/"):
-            delete_image_file(user.avatar)
-        saved_avatar = save_base64_image(avatar, subdir="avatars")
+        try:
+            if user.avatar and user.avatar.startswith("/media/"):
+                delete_image_file(user.avatar)
+            saved_avatar = save_base64_image(avatar, subdir="avatars")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     await users_repo.update_avatar(session, user=user, avatar=saved_avatar)
     return {"avatar": _absolute_media_url(request, user.avatar)}
@@ -382,6 +411,7 @@ async def delete_avatar(
 ):
     if user.avatar and user.avatar.startswith("/media/"):
         delete_image_file(user.avatar)
+
     await users_repo.update_avatar(session, user=user, avatar=None)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -400,12 +430,19 @@ async def subscribe(
 ):
     if author_id == user.id:
         raise HTTPException(status_code=400, detail="Cannot subscribe to yourself")
+
     author = await users_repo.get_by_id(session, author_id)
     if not author:
         raise HTTPException(status_code=404, detail="Not found")
+
     if not await subs_repo.is_subscribed(session, user_id=user.id, author_id=author_id):
         await subs_repo.add(session, user_id=user.id, author_id=author_id)
-    return {**(await _user_to_foodgram(session, author, user.id, request)), "recipes": [], "recipes_count": 0}
+
+    return {
+        **(await _user_to_foodgram(session, author, user.id, request)),
+        "recipes": [],
+        "recipes_count": 0,
+    }
 
 
 @router.delete("/users/{author_id}/subscribe/", status_code=status.HTTP_204_NO_CONTENT)
@@ -447,6 +484,7 @@ async def list_recipes(
 ):
     limit = clamp_limit(limit)
     current_user_id = current_user.id if current_user else None
+
     if (is_favorited or is_in_shopping_cart) and current_user_id is None:
         return {"count": 0, "next": None, "previous": None, "results": []}
 
@@ -474,6 +512,7 @@ async def list_recipes(
         is_favorited=bool(is_favorited),
         is_in_shopping_cart=bool(is_in_shopping_cart),
     )
+
     results = [await _recipe_to_foodgram(session, r, current_user_id, request) for r in recipes]
     meta = _page_meta(total, page, limit, request)
     return {**meta, "results": results}
@@ -489,6 +528,7 @@ async def download_shopping_cart(
     items = await aggregated_ingredients(session=session, user=user)
     lines = [f"{it['name']} - {it['amount']} {it['unit']}" for it in items]
     content = "\n".join(lines) + "\n"
+
     return StreamingResponse(
         iter([content.encode("utf-8")]),
         media_type="text/plain; charset=utf-8",
@@ -506,6 +546,7 @@ async def get_recipe(
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Not found")
+
     current_user_id = current_user.id if current_user else None
     return await _recipe_to_foodgram(session, recipe, current_user_id, request)
 
@@ -539,23 +580,17 @@ async def create_recipe(
     recipe = await recipes_repo.create(session, recipe_create, author_id=user.id)
 
     if payload.image:
-        saved_path = save_base64_image(payload.image, subdir="recipes")
-        print("DEBUG payload.image prefix =", payload.image[:30])
-        print("DEBUG saved_path =", saved_path)
+        try:
+            saved_path = save_base64_image(payload.image, subdir="recipes")
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
         recipe.image = saved_path
-        print("DEBUG recipe.image after assign =", recipe.image)
-
+        session.add(recipe)
         await session.flush()
-        print("DEBUG recipe.image after flush =", recipe.image)
 
     await session.commit()
     await session.refresh(recipe)
-
-    print("DEBUG recipe.image after refresh =", recipe.image)
-
-    db_recipe = await recipes_repo.get(session, recipe.id)
-    print("DEBUG image from db =", db_recipe.image)
 
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
@@ -571,6 +606,7 @@ async def update_recipe(
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Not found")
+
     if recipe.author_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
@@ -604,9 +640,14 @@ async def update_recipe(
         recipe = await recipes_repo.update(session, recipe, upd)
 
     if payload.image is not None:
-        if recipe.image and recipe.image.startswith("/media/"):
-            delete_image_file(recipe.image)
-        recipe.image = save_base64_image(payload.image, subdir="recipes")
+        try:
+            if recipe.image and recipe.image.startswith("/media/"):
+                delete_image_file(recipe.image)
+            recipe.image = save_base64_image(payload.image, subdir="recipes")
+            session.add(recipe)
+            await session.flush()
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     await session.commit()
     await session.refresh(recipe)
@@ -623,6 +664,7 @@ async def delete_recipe(
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     if recipe.author_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
@@ -648,6 +690,7 @@ async def add_favorite_foodgram(
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Not found")
+
     return {
         "id": recipe.id,
         "name": recipe.title,
@@ -667,6 +710,7 @@ async def remove_favorite_foodgram(
     if fav is not None:
         await session.delete(fav)
         await session.commit()
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -703,16 +747,24 @@ async def remove_from_cart_foodgram(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
-    stmt = select(ShoppingCartItem).where(ShoppingCartItem.user_id == user.id, ShoppingCartItem.recipe_id == recipe_id)
+    stmt = select(ShoppingCartItem).where(
+        ShoppingCartItem.user_id == user.id,
+        ShoppingCartItem.recipe_id == recipe_id,
+    )
     item = (await session.execute(stmt)).scalars().first()
     if item is not None:
         await session.delete(item)
         await session.commit()
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/recipes/{recipe_id:int}/get-link/")
-async def get_short_link(recipe_id: int, request: Request, session: AsyncSession = Depends(get_db_session)):
+async def get_short_link(
+    recipe_id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+):
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Not found")

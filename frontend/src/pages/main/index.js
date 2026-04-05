@@ -9,13 +9,12 @@ import {
 } from '../../components'
 import styles from './styles.module.css'
 import { useRecipes } from '../../utils/index.js'
-import { useEffect, useContext } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import api from '../../api'
 import MetaTags from 'react-meta-tags'
-import { AuthContext } from '../../contexts'
 
 const HomePage = ({ updateOrders }) => {
-  const authContext = useContext(AuthContext)
+  const [tagsLoaded, setTagsLoaded] = useState(false)
 
   const {
     recipes,
@@ -31,28 +30,36 @@ const HomePage = ({ updateOrders }) => {
     handleAddToCart
   } = useRecipes()
 
-  const getRecipes = ({ page = 1, tags }) => {
+  const getRecipes = useCallback(({ page = 1, tags = [] }) => {
     api.getRecipes({ page, tags })
       .then(res => {
         const { results, count } = res
-        setRecipes(results)
-        setRecipesCount(count)
+        setRecipes(results || [])
+        setRecipesCount(count || 0)
       })
       .catch(() => {
         setRecipes([])
         setRecipesCount(0)
       })
-  }
+  }, [setRecipes, setRecipesCount])
 
   useEffect(() => {
+    api.getTags()
+      .then(tags => {
+        setTagsValue(tags.map(tag => ({ ...tag, value: false })))
+      })
+      .catch(() => {
+        setTagsValue([])
+      })
+      .finally(() => {
+        setTagsLoaded(true)
+      })
+  }, [setTagsValue])
+
+  useEffect(() => {
+    if (!tagsLoaded) return
     getRecipes({ page: recipesPage, tags: tagsValue })
-  }, [recipesPage, tagsValue, authContext])
-
-  useEffect(() => {
-    api.getTags().then(tags => {
-      setTagsValue(tags.map(tag => ({ ...tag, value: false })))
-    })
-  }, [])
+  }, [recipesPage, tagsValue, tagsLoaded, getRecipes])
 
   return (
     <Main>

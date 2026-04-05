@@ -578,11 +578,16 @@ async def create_recipe(
     )
 
     recipe = await recipes_repo.create(session, recipe_create, author_id=user.id)
+    print("DEBUG create_recipe called")
+    print("DEBUG payload.image is None =", payload.image is None)
 
     if payload.image:
+        print("DEBUG payload.image prefix =", payload.image[:40])
         try:
             saved_path = save_base64_image(payload.image, subdir="recipes")
+            print("DEBUG saved_path =", saved_path)
         except ValueError as e:
+            print("DEBUG save_base64_image error =", str(e))
             raise HTTPException(status_code=400, detail=str(e))
 
         await session.execute(
@@ -590,10 +595,14 @@ async def create_recipe(
             .where(Recipe.id == recipe.id)
             .values(image=saved_path)
         )
+        print("DEBUG sql update executed for recipe", recipe.id)
+    else:
+        print("DEBUG payload.image was falsy")
 
     await session.commit()
-
     recipe = await recipes_repo.get(session, recipe.id)
+    print("DEBUG image after commit =", recipe.image)
+
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
 @router.patch("/recipes/{recipe_id:int}/", response_model=FoodgramRecipeOut)

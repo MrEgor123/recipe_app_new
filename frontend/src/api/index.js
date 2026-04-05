@@ -394,18 +394,6 @@ class Api {
     }).then(this.checkResponse);
   }
 
-  getShoppingCartCount() {
-    const token = localStorage.getItem("token");
-
-    return fetch(`/api/shopping-cart/count`, {
-      method: "GET",
-      headers: {
-        ...this._headers,
-        authorization: `Token ${token}`,
-      },
-    }).then(this.checkResponse);
-  }
-
   addToOrders({ id }) {
     const token = localStorage.getItem("token");
 

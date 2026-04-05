@@ -110,7 +110,11 @@ function App() {
 
   const getOrders = () => {
     api
-      .getShoppingCartCount()
+      .getRecipes({
+        page: 1,
+        limit: 999,
+        is_in_shopping_cart: 1,
+      })
       .then((res) => {
         setOrders(res.count || 0);
       })

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from sqladmin import Admin
 
@@ -12,6 +13,9 @@ app = FastAPI(title="Recipe App", version="0.3.0")
 
 # нужно для логина в админке (cookie session)
 app.add_middleware(SessionMiddleware, secret_key=settings.jwt_secret_key)
+
+# раздача файлов из media
+app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # твои API роуты
 app.include_router(api_router)

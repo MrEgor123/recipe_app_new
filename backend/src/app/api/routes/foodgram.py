@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import base64
-import binascii
-import uuid
-from pathlib import Path
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, PositiveInt, condecimal
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
@@ -25,6 +21,7 @@ from app.repositories.subscriptions import SubscriptionRepository
 from app.repositories.tags import TagRepository
 from app.repositories.users import UserRepository
 from app.schemas.recipes import RecipeCreate, RecipeIngredientIn, RecipeStepIn, RecipeUpdate
+from app.utils.images import save_base64_image, delete_image_file
 
 router = APIRouter(prefix="/api")
 
@@ -37,11 +34,6 @@ short_links_repo = ShortLinkRepository()
 
 MAX_LIMIT = 1000
 
-MEDIA_ROOT = Path("/app/media")
-RECIPES_MEDIA_DIR = MEDIA_ROOT / "recipes"
-
-
-# -------------------- foodgram schemas (for Swagger) --------------------
 
 class FoodgramIngredientIn(BaseModel):
     id: int
@@ -118,8 +110,6 @@ class FoodgramRecipeOut(BaseModel):
     steps: List[FoodgramStepOut] = Field(default_factory=list)
 
 
-# -------------------- helpers --------------------
-
 def clamp_limit(limit: int) -> int:
     return max(1, min(limit, MAX_LIMIT))
 
@@ -140,83 +130,33 @@ def _page_meta(count: int, page: int, limit: int, request: Request) -> dict:
     return {"count": count, "next": next_url, "previous": prev_url}
 
 
-def _ensure_media_dirs() -> None:
-    RECIPES_MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _save_base64_image(image_data: str | None) -> str | None:
-    if not image_data:
-        return None
-
-    if not image_data.startswith("data:image/"):
-        return image_data
-
-    try:
-        header, encoded = image_data.split(",", 1)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid image format")
-
-    ext = "jpg"
-    if "image/png" in header:
-        ext = "png"
-    elif "image/webp" in header:
-        ext = "webp"
-    elif "image/jpeg" in header or "image/jpg" in header:
-        ext = "jpg"
-
-    try:
-        binary = base64.b64decode(encoded)
-    except (binascii.Error, ValueError):
-        raise HTTPException(status_code=400, detail="Invalid base64 image")
-
-    _ensure_media_dirs()
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    filepath = RECIPES_MEDIA_DIR / filename
-
-    with open(filepath, "wb") as f:
-        f.write(binary)
-
-    return f"/media/recipes/{filename}"
-
-
-def _build_media_url(request: Request, image_path: str | None) -> str | None:
+def _absolute_media_url(request: Request, image_path: str | None) -> str | None:
     if not image_path:
         return None
 
     if image_path.startswith("http://") or image_path.startswith("https://"):
         return image_path
 
-    if image_path.startswith("data:image/"):
-        return image_path
-
     base = str(request.base_url).rstrip("/")
     return f"{base}{image_path}"
 
 
-async def _ensure_recipe_image_path(session: AsyncSession, recipe: Recipe) -> str | None:
-    image = recipe.image
-    if not image:
-        return None
-
-    if image.startswith("data:image/"):
-        recipe.image = _save_base64_image(image)
-        await session.commit()
-        await session.refresh(recipe)
-
-    return recipe.image
-
-
-async def _user_to_foodgram(session: AsyncSession, user, current_user_id: int | None) -> dict:
+async def _user_to_foodgram(session: AsyncSession, user, current_user_id: int | None, request: Request | None = None) -> dict:
     is_subscribed = False
     if current_user_id is not None and user.id != current_user_id:
         is_subscribed = await subs_repo.is_subscribed(session, user_id=current_user_id, author_id=user.id)
+
+    avatar = user.avatar
+    if request is not None and avatar and avatar.startswith("/media/"):
+        avatar = _absolute_media_url(request, avatar)
+
     return {
         "id": user.id,
         "email": user.email,
         "username": user.username,
         "first_name": user.first_name,
         "last_name": user.last_name,
-        "avatar": user.avatar,
+        "avatar": avatar,
         "is_subscribed": is_subscribed,
     }
 
@@ -227,8 +167,6 @@ async def _recipe_to_foodgram(
     current_user_id: int | None,
     request: Request,
 ) -> dict:
-    recipe_image = await _ensure_recipe_image_path(session, recipe)
-
     tags = await recipes_repo.get_recipe_tags(session, recipe.id)
     ingredients_rows = await recipes_repo.get_recipe_ingredients(session, recipe.id)
     steps = await recipes_repo.get_recipe_steps(session, recipe.id)
@@ -241,10 +179,7 @@ async def _recipe_to_foodgram(
     is_in_shopping_cart = False
 
     if current_user_id is not None:
-        fav_stmt = select(Favorite.id).where(
-            Favorite.user_id == current_user_id,
-            Favorite.recipe_id == recipe.id,
-        )
+        fav_stmt = select(Favorite.id).where(Favorite.user_id == current_user_id, Favorite.recipe_id == recipe.id)
         is_favorited = (await session.execute(fav_stmt)).first() is not None
 
         cart_stmt = select(ShoppingCartItem.id).where(
@@ -257,43 +192,19 @@ async def _recipe_to_foodgram(
         "id": recipe.id,
         "name": recipe.title,
         "text": recipe.description,
-        "image": _build_media_url(request, recipe_image),
+        "image": _absolute_media_url(request, recipe.image),
         "cooking_time": recipe.cooking_time_minutes,
         "tags": [{"id": t.id, "name": t.name, "slug": t.slug, "color": t.color} for t in tags],
         "ingredients": [
-            {
-                "id": row.id,
-                "name": row.name,
-                "measurement_unit": row.unit,
-                "amount": float(row.amount),
-            }
+            {"id": row.id, "name": row.name, "measurement_unit": row.unit, "amount": float(row.amount)}
             for row in ingredients_rows
         ],
-        "author": await _user_to_foodgram(session, author, current_user_id),
+        "author": await _user_to_foodgram(session, author, current_user_id, request),
         "is_favorited": is_favorited,
         "is_in_shopping_cart": is_in_shopping_cart,
-        "steps": [
-            {
-                "position": s.position,
-                "text": s.text,
-                "duration_sec": s.duration_sec,
-            }
-            for s in steps
-        ],
+        "steps": [{"position": s.position, "text": s.text, "duration_sec": s.duration_sec} for s in steps],
     }
 
-
-async def _recipe_short(session: AsyncSession, recipe: Recipe, request: Request) -> dict:
-    recipe_image = await _ensure_recipe_image_path(session, recipe)
-    return {
-        "id": recipe.id,
-        "name": recipe.title,
-        "image": _build_media_url(request, recipe_image),
-        "cooking_time": recipe.cooking_time_minutes,
-    }
-
-
-# -------------------- auth --------------------
 
 @router.post("/auth/token/login/", status_code=status.HTTP_200_OK)
 async def token_login(payload: dict, session: AsyncSession = Depends(get_db_session)):
@@ -304,10 +215,7 @@ async def token_login(payload: dict, session: AsyncSession = Depends(get_db_sess
 
     user = await users_repo.get_by_email(session, str(email))
     if not user or not verify_password(str(password), user.password_hash):
-        return JSONResponse(
-            status_code=400,
-            content={"non_field_errors": ["Unable to log in with provided credentials"]},
-        )
+        return JSONResponse(status_code=400, content={"non_field_errors": ["Unable to log in with provided credentials"]})
 
     return {"auth_token": create_access_token(user.id)}
 
@@ -317,8 +225,6 @@ async def token_logout():
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# -------------------- users --------------------
-
 @router.post("/users/", status_code=status.HTTP_201_CREATED)
 async def create_user(payload: dict, session: AsyncSession = Depends(get_db_session)):
     email = payload.get("email")
@@ -327,10 +233,7 @@ async def create_user(payload: dict, session: AsyncSession = Depends(get_db_sess
     first_name = payload.get("first_name", "")
     last_name = payload.get("last_name", "")
     if not email or not password or not username:
-        return JSONResponse(
-            status_code=400,
-            content={"non_field_errors": ["email, username and password required"]},
-        )
+        return JSONResponse(status_code=400, content={"non_field_errors": ["email, username and password required"]})
 
     if await users_repo.get_by_email(session, str(email)):
         return JSONResponse(status_code=400, content={"email": ["User with this email already exists"]})
@@ -351,10 +254,11 @@ async def create_user(payload: dict, session: AsyncSession = Depends(get_db_sess
 
 @router.get("/users/me/")
 async def users_me(
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
-    return await _user_to_foodgram(session, user, user.id)
+    return await _user_to_foodgram(session, user, user.id, request)
 
 
 @router.get("/users/subscriptions/")
@@ -384,10 +288,18 @@ async def list_subscriptions(
         author_recipes = list((await session.execute(stmt)).scalars().all())
         recipes_count = len(author_recipes)
         author_recipes = author_recipes[:recipes_limit] if recipes_limit else []
-        recipes_short = [await _recipe_short(session, r, request) for r in author_recipes]
+        recipes_short = [
+            {
+                "id": r.id,
+                "name": r.title,
+                "image": _absolute_media_url(request, r.image),
+                "cooking_time": r.cooking_time_minutes,
+            }
+            for r in author_recipes
+        ]
 
         results.append({
-            **(await _user_to_foodgram(session, author, user.id)),
+            **(await _user_to_foodgram(session, author, user.id, request)),
             "recipes": recipes_short,
             "recipes_count": recipes_count,
         })
@@ -407,7 +319,7 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="Not found")
     current_user_id = current_user.id if current_user else None
-    return await _user_to_foodgram(session, user, current_user_id)
+    return await _user_to_foodgram(session, user, current_user_id, request)
 
 
 @router.get("/users/")
@@ -423,7 +335,7 @@ async def list_users(
     offset = (page - 1) * limit
     users = await users_repo.list(session, limit=limit, offset=offset)
     current_user_id = current_user.id if current_user else None
-    results = [await _user_to_foodgram(session, u, current_user_id) for u in users]
+    results = [await _user_to_foodgram(session, u, current_user_id, request) for u in users]
     meta = _page_meta(count, page, limit, request)
     return {**meta, "results": results}
 
@@ -446,13 +358,21 @@ async def set_password(
 
 @router.put("/users/me/avatar/")
 async def set_avatar(
+    request: Request,
     payload: dict,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
     avatar = payload.get("avatar")
-    await users_repo.update_avatar(session, user=user, avatar=avatar)
-    return {"avatar": user.avatar}
+    saved_avatar = user.avatar
+
+    if avatar:
+        if user.avatar and user.avatar.startswith("/media/"):
+            delete_image_file(user.avatar)
+        saved_avatar = save_base64_image(avatar, subdir="avatars")
+
+    await users_repo.update_avatar(session, user=user, avatar=saved_avatar)
+    return {"avatar": _absolute_media_url(request, user.avatar)}
 
 
 @router.delete("/users/me/avatar/", status_code=status.HTTP_204_NO_CONTENT)
@@ -460,6 +380,8 @@ async def delete_avatar(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
+    if user.avatar and user.avatar.startswith("/media/"):
+        delete_image_file(user.avatar)
     await users_repo.update_avatar(session, user=user, avatar=None)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -469,10 +391,9 @@ async def reset_password():
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# -------------------- subscriptions --------------------
-
 @router.post("/users/{author_id}/subscribe/", status_code=status.HTTP_201_CREATED)
 async def subscribe(
+    request: Request,
     author_id: int,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
@@ -484,7 +405,7 @@ async def subscribe(
         raise HTTPException(status_code=404, detail="Not found")
     if not await subs_repo.is_subscribed(session, user_id=user.id, author_id=author_id):
         await subs_repo.add(session, user_id=user.id, author_id=author_id)
-    return {**(await _user_to_foodgram(session, author, user.id)), "recipes": [], "recipes_count": 0}
+    return {**(await _user_to_foodgram(session, author, user.id, request)), "recipes": [], "recipes_count": 0}
 
 
 @router.delete("/users/{author_id}/subscribe/", status_code=status.HTTP_204_NO_CONTENT)
@@ -496,8 +417,6 @@ async def unsubscribe(
     await subs_repo.remove(session, user_id=user.id, author_id=author_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-
-# -------------------- tags & ingredients --------------------
 
 @router.get("/tags/")
 async def list_tags(session: AsyncSession = Depends(get_db_session)):
@@ -513,20 +432,6 @@ async def list_ingredients(
     items = await ingredients_repo.search(session, search=name)
     return [{"id": i.id, "name": i.name, "measurement_unit": i.unit} for i in items]
 
-
-# -------------------- shopping cart count --------------------
-
-@router.get("/shopping-cart/count")
-async def shopping_cart_count(
-    session: AsyncSession = Depends(get_db_session),
-    user=Depends(get_current_user_token),
-):
-    stmt = select(func.count(ShoppingCartItem.id)).where(ShoppingCartItem.user_id == user.id)
-    count = int((await session.execute(stmt)).scalar_one())
-    return {"count": count}
-
-
-# -------------------- recipes --------------------
 
 @router.get("/recipes/")
 async def list_recipes(
@@ -607,8 +512,8 @@ async def get_recipe(
 
 @router.post("/recipes/", status_code=status.HTTP_201_CREATED, response_model=FoodgramRecipeOut)
 async def create_recipe(
-    payload: FoodgramRecipeCreate,
     request: Request,
+    payload: FoodgramRecipeCreate,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
@@ -632,7 +537,9 @@ async def create_recipe(
     )
 
     recipe = await recipes_repo.create(session, recipe_create, author_id=user.id)
-    recipe.image = _save_base64_image(payload.image)
+
+    if payload.image:
+        recipe.image = save_base64_image(payload.image, subdir="recipes")
 
     await session.commit()
     await session.refresh(recipe)
@@ -642,8 +549,8 @@ async def create_recipe(
 @router.patch("/recipes/{recipe_id:int}/", response_model=FoodgramRecipeOut)
 async def update_recipe(
     recipe_id: int,
-    payload: FoodgramRecipeUpdate,
     request: Request,
+    payload: FoodgramRecipeUpdate,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
@@ -678,13 +585,17 @@ async def update_recipe(
             for s in payload.steps
         ]
 
-    upd = RecipeUpdate(**data)
-    recipe = await recipes_repo.update(session, recipe, upd)
+    if data:
+        upd = RecipeUpdate(**data)
+        recipe = await recipes_repo.update(session, recipe, upd)
 
     if payload.image is not None:
-        recipe.image = _save_base64_image(payload.image)
-        await session.commit()
-        await session.refresh(recipe)
+        if recipe.image and recipe.image.startswith("/media/"):
+            delete_image_file(recipe.image)
+        recipe.image = save_base64_image(payload.image, subdir="recipes")
+
+    await session.commit()
+    await session.refresh(recipe)
 
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
@@ -700,14 +611,18 @@ async def delete_recipe(
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     if recipe.author_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    if recipe.image and recipe.image.startswith("/media/"):
+        delete_image_file(recipe.image)
+
     await recipes_repo.delete(session, recipe)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/recipes/{recipe_id:int}/favorite/", status_code=status.HTTP_201_CREATED)
 async def add_favorite_foodgram(
-    recipe_id: int,
     request: Request,
+    recipe_id: int,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
@@ -719,7 +634,12 @@ async def add_favorite_foodgram(
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Not found")
-    return await _recipe_short(session, recipe, request)
+    return {
+        "id": recipe.id,
+        "name": recipe.title,
+        "image": _absolute_media_url(request, recipe.image),
+        "cooking_time": recipe.cooking_time_minutes,
+    }
 
 
 @router.delete("/recipes/{recipe_id:int}/favorite/", status_code=status.HTTP_204_NO_CONTENT)
@@ -738,8 +658,8 @@ async def remove_favorite_foodgram(
 
 @router.post("/recipes/{recipe_id:int}/shopping_cart/", status_code=status.HTTP_201_CREATED)
 async def add_to_cart_foodgram(
-    recipe_id: int,
     request: Request,
+    recipe_id: int,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
@@ -755,7 +675,12 @@ async def add_to_cart_foodgram(
         session.add(ShoppingCartItem(user_id=user.id, recipe_id=recipe_id))
         await session.commit()
 
-    return await _recipe_short(session, recipe, request)
+    return {
+        "id": recipe.id,
+        "name": recipe.title,
+        "image": _absolute_media_url(request, recipe.image),
+        "cooking_time": recipe.cooking_time_minutes,
+    }
 
 
 @router.delete("/recipes/{recipe_id:int}/shopping_cart/", status_code=status.HTTP_204_NO_CONTENT)
@@ -764,10 +689,7 @@ async def remove_from_cart_foodgram(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
-    stmt = select(ShoppingCartItem).where(
-        ShoppingCartItem.user_id == user.id,
-        ShoppingCartItem.recipe_id == recipe_id,
-    )
+    stmt = select(ShoppingCartItem).where(ShoppingCartItem.user_id == user.id, ShoppingCartItem.recipe_id == recipe_id)
     item = (await session.execute(stmt)).scalars().first()
     if item is not None:
         await session.delete(item)
@@ -776,11 +698,7 @@ async def remove_from_cart_foodgram(
 
 
 @router.get("/recipes/{recipe_id:int}/get-link/")
-async def get_short_link(
-    recipe_id: int,
-    request: Request,
-    session: AsyncSession = Depends(get_db_session),
-):
+async def get_short_link(recipe_id: int, request: Request, session: AsyncSession = Depends(get_db_session)):
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
         raise HTTPException(status_code=404, detail="Not found")

@@ -13,6 +13,7 @@ from app.api.routes.comments import router as comments_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
+api_router.include_router(foodgram_router)
 api_router.include_router(recipes_router)
 api_router.include_router(tags_router)
 api_router.include_router(ingredients_router)
@@ -20,5 +21,4 @@ api_router.include_router(favorites_router)
 api_router.include_router(subscriptions_router)
 api_router.include_router(shopping_cart_router)
 api_router.include_router(short_links_router)
-api_router.include_router(foodgram_router)
 api_router.include_router(comments_router)

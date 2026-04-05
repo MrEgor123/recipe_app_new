@@ -539,10 +539,24 @@ async def create_recipe(
     recipe = await recipes_repo.create(session, recipe_create, author_id=user.id)
 
     if payload.image:
-        recipe.image = save_base64_image(payload.image, subdir="recipes")
+        saved_path = save_base64_image(payload.image, subdir="recipes")
+        print("DEBUG payload.image prefix =", payload.image[:30])
+        print("DEBUG saved_path =", saved_path)
+
+        recipe.image = saved_path
+        print("DEBUG recipe.image after assign =", recipe.image)
+
+        await session.flush()
+        print("DEBUG recipe.image after flush =", recipe.image)
 
     await session.commit()
     await session.refresh(recipe)
+
+    print("DEBUG recipe.image after refresh =", recipe.image)
+
+    db_recipe = await recipes_repo.get(session, recipe.id)
+    print("DEBUG image from db =", db_recipe.image)
+
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
 

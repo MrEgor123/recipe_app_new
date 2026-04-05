@@ -155,7 +155,9 @@ async def _user_to_foodgram(
 ) -> dict:
     is_subscribed = False
     if current_user_id is not None and user.id != current_user_id:
-        is_subscribed = await subs_repo.is_subscribed(session, user_id=current_user_id, author_id=user.id)
+        is_subscribed = await subs_repo.is_subscribed(
+            session, user_id=current_user_id, author_id=user.id
+        )
 
     avatar = user.avatar
     if request is not None and avatar:
@@ -190,7 +192,10 @@ async def _recipe_to_foodgram(
     is_in_shopping_cart = False
 
     if current_user_id is not None:
-        fav_stmt = select(Favorite.id).where(Favorite.user_id == current_user_id, Favorite.recipe_id == recipe.id)
+        fav_stmt = select(Favorite.id).where(
+            Favorite.user_id == current_user_id,
+            Favorite.recipe_id == recipe.id,
+        )
         is_favorited = (await session.execute(fav_stmt)).first() is not None
 
         cart_stmt = select(ShoppingCartItem.id).where(
@@ -207,13 +212,21 @@ async def _recipe_to_foodgram(
         "cooking_time": recipe.cooking_time_minutes,
         "tags": [{"id": t.id, "name": t.name, "slug": t.slug, "color": t.color} for t in tags],
         "ingredients": [
-            {"id": row.id, "name": row.name, "measurement_unit": row.unit, "amount": float(row.amount)}
+            {
+                "id": row.id,
+                "name": row.name,
+                "measurement_unit": row.unit,
+                "amount": float(row.amount),
+            }
             for row in ingredients_rows
         ],
         "author": await _user_to_foodgram(session, author, current_user_id, request),
         "is_favorited": is_favorited,
         "is_in_shopping_cart": is_in_shopping_cart,
-        "steps": [{"position": s.position, "text": s.text, "duration_sec": s.duration_sec} for s in steps],
+        "steps": [
+            {"position": s.position, "text": s.text, "duration_sec": s.duration_sec}
+            for s in steps
+        ],
     }
 
 
@@ -257,7 +270,10 @@ async def create_user(payload: dict, session: AsyncSession = Depends(get_db_sess
         return JSONResponse(status_code=400, content={"email": ["User with this email already exists"]})
 
     if await users_repo.get_by_username(session, str(username)):
-        return JSONResponse(status_code=400, content={"username": ["User with this username already exists"]})
+        return JSONResponse(
+            status_code=400,
+            content={"username": ["User with this username already exists"]},
+        )
 
     user = await users_repo.create(
         session,
@@ -578,16 +594,16 @@ async def create_recipe(
     )
 
     recipe = await recipes_repo.create(session, recipe_create, author_id=user.id)
-    print("DEBUG create_recipe called")
-    print("DEBUG payload.image is None =", payload.image is None)
+    print("DEBUG create_recipe called", flush=True)
+    print("DEBUG payload.image is None =", payload.image is None, flush=True)
 
     if payload.image:
-        print("DEBUG payload.image prefix =", payload.image[:40])
+        print("DEBUG payload.image prefix =", payload.image[:40], flush=True)
         try:
             saved_path = save_base64_image(payload.image, subdir="recipes")
-            print("DEBUG saved_path =", saved_path)
+            print("DEBUG saved_path =", saved_path, flush=True)
         except ValueError as e:
-            print("DEBUG save_base64_image error =", str(e))
+            print("DEBUG save_base64_image error =", str(e), flush=True)
             raise HTTPException(status_code=400, detail=str(e))
 
         await session.execute(
@@ -595,15 +611,16 @@ async def create_recipe(
             .where(Recipe.id == recipe.id)
             .values(image=saved_path)
         )
-        print("DEBUG sql update executed for recipe", recipe.id)
+        print("DEBUG sql update executed for recipe", recipe.id, flush=True)
     else:
-        print("DEBUG payload.image was falsy")
+        print("DEBUG payload.image was falsy", flush=True)
 
     await session.commit()
     recipe = await recipes_repo.get(session, recipe.id)
-    print("DEBUG image after commit =", recipe.image)
+    print("DEBUG image after commit =", recipe.image, flush=True)
 
     return await _recipe_to_foodgram(session, recipe, user.id, request)
+
 
 @router.patch("/recipes/{recipe_id:int}/", response_model=FoodgramRecipeOut)
 async def update_recipe(
@@ -699,7 +716,10 @@ async def add_favorite_foodgram(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
-    exists_stmt = select(Favorite.id).where(Favorite.user_id == user.id, Favorite.recipe_id == recipe_id)
+    exists_stmt = select(Favorite.id).where(
+        Favorite.user_id == user.id,
+        Favorite.recipe_id == recipe_id,
+    )
     if (await session.execute(exists_stmt)).first() is None:
         session.add(Favorite(user_id=user.id, recipe_id=recipe_id))
         await session.commit()
@@ -722,7 +742,10 @@ async def remove_favorite_foodgram(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
-    stmt = select(Favorite).where(Favorite.user_id == user.id, Favorite.recipe_id == recipe_id)
+    stmt = select(Favorite).where(
+        Favorite.user_id == user.id,
+        Favorite.recipe_id == recipe_id,
+    )
     fav = (await session.execute(stmt)).scalars().first()
     if fav is not None:
         await session.delete(fav)

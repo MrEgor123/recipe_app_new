@@ -5,7 +5,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, PositiveInt, condecimal
-from sqlalchemy import select
+from sqlalchemy import select, update as sql_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
@@ -585,15 +585,16 @@ async def create_recipe(
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
-        recipe.image = saved_path
-        session.add(recipe)
-        await session.flush()
+        await session.execute(
+            sql_update(Recipe)
+            .where(Recipe.id == recipe.id)
+            .values(image=saved_path)
+        )
 
     await session.commit()
-    await session.refresh(recipe)
 
+    recipe = await recipes_repo.get(session, recipe.id)
     return await _recipe_to_foodgram(session, recipe, user.id, request)
-
 
 @router.patch("/recipes/{recipe_id:int}/", response_model=FoodgramRecipeOut)
 async def update_recipe(
@@ -641,17 +642,24 @@ async def update_recipe(
 
     if payload.image is not None:
         try:
-            if recipe.image and recipe.image.startswith("/media/"):
-                delete_image_file(recipe.image)
-            recipe.image = save_base64_image(payload.image, subdir="recipes")
-            session.add(recipe)
-            await session.flush()
+            old_image = recipe.image
+
+            if old_image and old_image.startswith("/media/"):
+                delete_image_file(old_image)
+
+            saved_path = save_base64_image(payload.image, subdir="recipes")
+
+            await session.execute(
+                sql_update(Recipe)
+                .where(Recipe.id == recipe.id)
+                .values(image=saved_path)
+            )
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
     await session.commit()
-    await session.refresh(recipe)
 
+    recipe = await recipes_repo.get(session, recipe_id)
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
 

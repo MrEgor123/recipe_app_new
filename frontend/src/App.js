@@ -7,7 +7,6 @@ import api from "./api";
 import styles from "./styles.module.css";
 
 import {
-  // About,
   Main,
   Cart,
   SignIn,
@@ -22,7 +21,6 @@ import {
   NotFound,
   UpdateAvatar,
   ResetPassword,
-  // Technologies,
 } from "./pages";
 
 import { AuthContext, UserContext } from "./contexts";
@@ -112,13 +110,9 @@ function App() {
 
   const getOrders = () => {
     api
-      .getRecipes({
-        page: 1,
-        is_in_shopping_cart: Number(true),
-      })
+      .getShoppingCartCount()
       .then((res) => {
-        const { count } = res;
-        setOrders(count);
+        setOrders(res.count || 0);
       })
       .catch(() => {
         setOrders(0);
@@ -311,7 +305,6 @@ function App() {
 
             <Route exact path="/about">
               <NotFound />
-              {/* <About component={About} /> */}
             </Route>
 
             <Route exact path="/reset-password">
@@ -320,7 +313,6 @@ function App() {
 
             <Route exact path="/technologies">
               <NotFound />
-              {/* <Technologies component={Technologies}/> */}
             </Route>
 
             <Route exact path="/recipes">

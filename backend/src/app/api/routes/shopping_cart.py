@@ -1,4 +1,3 @@
-from typing import List
 from io import BytesIO
 
 from fastapi import APIRouter, Depends, Query, status
@@ -16,11 +15,13 @@ from app.models.recipe import Recipe
 from app.models.recipe_ingredient import RecipeIngredient
 from app.models.shopping_cart import ShoppingCartItem
 from app.repositories.recipes import RecipeRepository
+from app.repositories.shopping_cart import ShoppingCartRepository
 from app.schemas.recipes import RecipeIngredientOut, RecipeRead, RecipeTagOut
 from app.schemas.recipes_list import RecipeListResponse
 
 router = APIRouter(tags=["shopping-cart"])
 recipe_repo = RecipeRepository()
+shopping_cart_repo = ShoppingCartRepository()
 
 
 async def _to_read(session: AsyncSession, recipe: Recipe) -> RecipeRead:
@@ -39,6 +40,15 @@ async def _to_read(session: AsyncSession, recipe: Recipe) -> RecipeRead:
     )
 
 
+@router.get("/shopping-cart/count")
+async def get_cart_count(
+    session: AsyncSession = Depends(get_db_session),
+    user=Depends(get_current_user),
+):
+    count = await shopping_cart_repo.get_count(session, user_id=user.id)
+    return {"count": count}
+
+
 @router.get("/shopping-cart", response_model=RecipeListResponse)
 async def get_cart(
     session: AsyncSession = Depends(get_db_session),
@@ -49,8 +59,7 @@ async def get_cart(
     size = clamp_size(size)
     offset = calc_offset(page, size)
 
-    total_stmt = select(func.count(ShoppingCartItem.id)).where(ShoppingCartItem.user_id == user.id)
-    total = int((await session.execute(total_stmt)).scalar_one())
+    total = await shopping_cart_repo.get_count(session, user_id=user.id)
     pages = calc_pages(total, size)
 
     stmt = (
@@ -77,15 +86,19 @@ async def add_to_cart(
     if recipe is None:
         raise not_found("recipe", recipe_id)
 
-    exists_stmt = select(ShoppingCartItem.id).where(
-        ShoppingCartItem.user_id == user.id,
-        ShoppingCartItem.recipe_id == recipe_id,
+    exists = await shopping_cart_repo.is_in_cart(
+        session,
+        user_id=user.id,
+        recipe_id=recipe_id,
     )
-    if (await session.execute(exists_stmt)).first() is not None:
+    if exists:
         return {"status": "already_in_cart"}
 
-    session.add(ShoppingCartItem(user_id=user.id, recipe_id=recipe_id))
-    await session.commit()
+    await shopping_cart_repo.add(
+        session,
+        user_id=user.id,
+        recipe_id=recipe_id,
+    )
     return {"status": "added"}
 
 
@@ -95,14 +108,11 @@ async def remove_from_cart(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
-    stmt = select(ShoppingCartItem).where(
-        ShoppingCartItem.user_id == user.id,
-        ShoppingCartItem.recipe_id == recipe_id,
+    await shopping_cart_repo.remove(
+        session,
+        user_id=user.id,
+        recipe_id=recipe_id,
     )
-    item = (await session.execute(stmt)).scalars().first()
-    if item is not None:
-        await session.delete(item)
-        await session.commit()
     return None
 
 
@@ -111,8 +121,7 @@ async def aggregated_ingredients(
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
-    recipe_ids_stmt = select(ShoppingCartItem.recipe_id).where(ShoppingCartItem.user_id == user.id)
-    recipe_ids = [r[0] for r in (await session.execute(recipe_ids_stmt)).all()]
+    recipe_ids = await shopping_cart_repo.list_recipe_ids(session, user_id=user.id)
     if not recipe_ids:
         return []
 
@@ -129,7 +138,15 @@ async def aggregated_ingredients(
         .order_by(Ingredient.name.asc())
     )
     rows = (await session.execute(stmt)).all()
-    return [{"id": r.id, "name": r.name, "unit": r.unit, "amount": float(r.amount)} for r in rows]
+    return [
+        {
+            "id": r.id,
+            "name": r.name,
+            "unit": r.unit,
+            "amount": float(r.amount),
+        }
+        for r in rows
+    ]
 
 
 @router.get("/shopping-cart/export.txt")

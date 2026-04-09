@@ -35,13 +35,16 @@ services:
       - frontend_build:/frontend/result_build
     command: >
       sh -lc "
-      rm -rf build &&
-      mkdir -p result_build &&
-      rm -rf result_build/* &&
       npm install --legacy-peer-deps &&
-      npm run build &&
-      cp -r build/* result_build/
+      rm -rf /tmp/frontend-build &&
+      mkdir -p /tmp/frontend-build &&
+      BUILD_PATH=/tmp/frontend-build npm run build &&
+      mkdir -p /frontend/result_build &&
+      find /frontend/result_build -mindepth 1 -maxdepth 1 -exec rm -rf {} + &&
+      cp -r /tmp/frontend-build/* /frontend/result_build/ &&
+      ls -lah /frontend/result_build
       "
+    restart: "no"
 
   nginx:
     image: nginx:1.27-alpine

@@ -135,6 +135,110 @@
   color:var(--accent);
 }
 
+.ratingSection{
+  margin-bottom:22px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.ratingSummary{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+}
+
+.ratingBadge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--surface);
+}
+
+.ratingStar{
+  color:#f5b301;
+  font-size:18px;
+  line-height:1;
+}
+
+.ratingValue{
+  font-size:18px;
+  font-weight:700;
+  color:var(--text);
+}
+
+.ratingCount{
+  font-size:15px;
+  color:var(--muted);
+}
+
+.ratingControls{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:12px;
+}
+
+.ratingButtons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.ratingBtn{
+  min-width:42px;
+  height:42px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--text);
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:background .15s, border-color .15s, transform .05s;
+}
+
+.ratingBtn:hover{
+  border-color:var(--border-strong);
+  background:var(--surface);
+}
+
+.ratingBtn:active{
+  transform:translateY(1px);
+}
+
+.ratingBtnActive{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
+.ratingDeleteBtn{
+  height:42px;
+  padding:0 14px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.ratingDeleteBtn:hover{
+  border-color:var(--border-strong);
+  color:var(--text);
+}
+
+.ratingAuthNote{
+  font-size:14px;
+  color:var(--muted);
+}
+
 .subscribeRow{
   margin-top:-6px;
   margin-bottom:18px;
@@ -926,5 +1030,28 @@
   .commentAuthNote{
     font-size:14px;
     padding:16px;
+  }
+
+  .ratingSection{
+    margin-bottom:18px;
+  }
+
+  .ratingValue{
+    font-size:17px;
+  }
+
+  .ratingCount{
+    font-size:14px;
+  }
+
+  .ratingBtn{
+    min-width:38px;
+    height:38px;
+    font-size:14px;
+  }
+
+  .ratingDeleteBtn{
+    height:38px;
+    font-size:13px;
   }
 }

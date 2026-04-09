@@ -52,7 +52,9 @@ async def get_current_user_token(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ):
-    token = _extract_token_from_authorization_header(request.headers.get("Authorization"))
+    token = _extract_token_from_authorization_header(
+        request.headers.get("Authorization")
+    )
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return await _get_user_from_token(token, session)
@@ -62,10 +64,16 @@ async def get_optional_user_token(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ):
-    token = _extract_token_from_authorization_header(request.headers.get("Authorization"))
+    token = _extract_token_from_authorization_header(
+        request.headers.get("Authorization")
+    )
     if not token:
         return None
-    return await _get_user_from_token(token, session)
+
+    try:
+        return await _get_user_from_token(token, session)
+    except HTTPException:
+        return None
 
 
 async def get_optional_user(
@@ -74,7 +82,11 @@ async def get_optional_user(
 ):
     if creds is None:
         return None
-    return await _get_user_from_token(creds.credentials, session)
+
+    try:
+        return await _get_user_from_token(creds.credentials, session)
+    except HTTPException:
+        return None
 
 
 async def require_admin(user=Depends(get_current_user)):

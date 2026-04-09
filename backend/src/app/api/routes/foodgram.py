@@ -5,7 +5,7 @@ from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, PositiveInt, condecimal
-from sqlalchemy import select, update as sql_update
+from sqlalchemy import func, select, update as sql_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
@@ -13,6 +13,7 @@ from app.core.deps import get_current_user_token, get_optional_user_token
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.favorite import Favorite
 from app.models.recipe import Recipe
+from app.models.recipe_rating import RecipeRating
 from app.models.shopping_cart import ShoppingCartItem
 from app.repositories.ingredients import IngredientRepository
 from app.repositories.recipes import RecipeRepository
@@ -66,6 +67,10 @@ class FoodgramRecipeUpdate(BaseModel):
     image: Optional[str] = None
 
 
+class RecipeRatingIn(BaseModel):
+    rating: int = Field(ge=1, le=5)
+
+
 class FoodgramTagOut(BaseModel):
     id: int
     name: str
@@ -108,6 +113,9 @@ class FoodgramRecipeOut(BaseModel):
     is_favorited: bool
     is_in_shopping_cart: bool
     steps: List[FoodgramStepOut] = Field(default_factory=list)
+    rating_avg: float = 0
+    rating_count: int = 0
+    user_rating: Optional[int] = None
 
 
 def clamp_limit(limit: int) -> int:
@@ -147,6 +155,35 @@ def _absolute_media_url(request: Request, image_path: str | None) -> str | None:
     return image_path
 
 
+async def _get_recipe_rating_data(
+    session: AsyncSession,
+    recipe_id: int,
+    current_user_id: int | None,
+) -> dict:
+    agg_stmt = select(
+        func.count(RecipeRating.id),
+        func.avg(RecipeRating.rating),
+    ).where(RecipeRating.recipe_id == recipe_id)
+
+    agg_result = await session.execute(agg_stmt)
+    rating_count, rating_avg = agg_result.one()
+
+    user_rating = None
+    if current_user_id is not None:
+        user_stmt = select(RecipeRating.rating).where(
+            RecipeRating.recipe_id == recipe_id,
+            RecipeRating.user_id == current_user_id,
+        )
+        user_result = await session.execute(user_stmt)
+        user_rating = user_result.scalar_one_or_none()
+
+    return {
+        "rating_avg": round(float(rating_avg or 0), 2),
+        "rating_count": int(rating_count or 0),
+        "user_rating": user_rating,
+    }
+
+
 async def _user_to_foodgram(
     session: AsyncSession,
     user,
@@ -156,7 +193,9 @@ async def _user_to_foodgram(
     is_subscribed = False
     if current_user_id is not None and user.id != current_user_id:
         is_subscribed = await subs_repo.is_subscribed(
-            session, user_id=current_user_id, author_id=user.id
+            session,
+            user_id=current_user_id,
+            author_id=user.id,
         )
 
     avatar = user.avatar
@@ -204,6 +243,8 @@ async def _recipe_to_foodgram(
         )
         is_in_shopping_cart = (await session.execute(cart_stmt)).first() is not None
 
+    rating_data = await _get_recipe_rating_data(session, recipe.id, current_user_id)
+
     return {
         "id": recipe.id,
         "name": recipe.title,
@@ -227,6 +268,9 @@ async def _recipe_to_foodgram(
             {"position": s.position, "text": s.text, "duration_sec": s.duration_sec}
             for s in steps
         ],
+        "rating_avg": rating_data["rating_avg"],
+        "rating_count": rating_data["rating_count"],
+        "user_rating": rating_data["user_rating"],
     }
 
 
@@ -417,7 +461,7 @@ async def set_avatar(
             raise HTTPException(status_code=400, detail=str(e))
 
     await users_repo.update_avatar(session, user=user, avatar=saved_avatar)
-    return {"avatar": _absolute_media_url(request, user.avatar)}
+    return {"avatar": _absolute_media_url(request, saved_avatar)}
 
 
 @router.delete("/users/me/avatar/", status_code=status.HTTP_204_NO_CONTENT)
@@ -594,16 +638,11 @@ async def create_recipe(
     )
 
     recipe = await recipes_repo.create(session, recipe_create, author_id=user.id)
-    print("DEBUG create_recipe called", flush=True)
-    print("DEBUG payload.image is None =", payload.image is None, flush=True)
 
     if payload.image:
-        print("DEBUG payload.image prefix =", payload.image[:40], flush=True)
         try:
             saved_path = save_base64_image(payload.image, subdir="recipes")
-            print("DEBUG saved_path =", saved_path, flush=True)
         except ValueError as e:
-            print("DEBUG save_base64_image error =", str(e), flush=True)
             raise HTTPException(status_code=400, detail=str(e))
 
         await session.execute(
@@ -611,13 +650,9 @@ async def create_recipe(
             .where(Recipe.id == recipe.id)
             .values(image=saved_path)
         )
-        print("DEBUG sql update executed for recipe", recipe.id, flush=True)
-    else:
-        print("DEBUG payload.image was falsy", flush=True)
 
     await session.commit()
     recipe = await recipes_repo.get(session, recipe.id)
-    print("DEBUG image after commit =", recipe.image, flush=True)
 
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
@@ -669,7 +704,6 @@ async def update_recipe(
     if payload.image is not None:
         try:
             old_image = recipe.image
-
             if old_image and old_image.startswith("/media/"):
                 delete_image_file(old_image)
 
@@ -684,8 +718,8 @@ async def update_recipe(
             raise HTTPException(status_code=400, detail=str(e))
 
     await session.commit()
-
     recipe = await recipes_repo.get(session, recipe_id)
+
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
 
@@ -706,6 +740,64 @@ async def delete_recipe(
         delete_image_file(recipe.image)
 
     await recipes_repo.delete(session, recipe)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/recipes/{recipe_id:int}/rating/")
+async def rate_recipe(
+    recipe_id: int,
+    payload: RecipeRatingIn,
+    session: AsyncSession = Depends(get_db_session),
+    user=Depends(get_current_user_token),
+):
+    recipe = await recipes_repo.get(session, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    stmt = select(RecipeRating).where(
+        RecipeRating.recipe_id == recipe_id,
+        RecipeRating.user_id == user.id,
+    )
+    existing = (await session.execute(stmt)).scalars().first()
+
+    if existing:
+        existing.rating = payload.rating
+    else:
+        session.add(
+            RecipeRating(
+                recipe_id=recipe_id,
+                user_id=user.id,
+                rating=payload.rating,
+            )
+        )
+
+    await session.commit()
+
+    rating_data = await _get_recipe_rating_data(session, recipe_id, user.id)
+    return {
+        "recipe_id": recipe_id,
+        "rating_avg": rating_data["rating_avg"],
+        "rating_count": rating_data["rating_count"],
+        "user_rating": rating_data["user_rating"],
+    }
+
+
+@router.delete("/recipes/{recipe_id:int}/rating/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_recipe_rating(
+    recipe_id: int,
+    session: AsyncSession = Depends(get_db_session),
+    user=Depends(get_current_user_token),
+):
+    stmt = select(RecipeRating).where(
+        RecipeRating.recipe_id == recipe_id,
+        RecipeRating.user_id == user.id,
+    )
+    existing = (await session.execute(stmt)).scalars().first()
+
+    if existing is not None:
+        await session.delete(existing)
+        await session.commit()
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

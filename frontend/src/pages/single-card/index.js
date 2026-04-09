@@ -138,6 +138,7 @@ const SingleCard = ({ updateOrders }) => {
   const [replyingToId, setReplyingToId] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [replySubmitting, setReplySubmitting] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const { recipe, setRecipe, handleLike, handleAddToCart, handleSubscribe } =
     useRecipe();
@@ -246,6 +247,54 @@ const SingleCard = ({ updateOrders }) => {
 
   const handleErrorClose = () => {
     setNotificationError((prev) => ({ ...prev, position: "-100%" }));
+  };
+
+  const handleRateRecipe = (rating) => {
+    if (!authContext || ratingSubmitting) return;
+
+    setRatingSubmitting(true);
+
+    api
+      .rateRecipe({ recipe_id: id, rating })
+      .then((ratingData) => {
+        setRecipe((prev) => ({
+          ...prev,
+          rating_avg: ratingData.rating_avg,
+          rating_count: ratingData.rating_count,
+          user_rating: ratingData.user_rating,
+        }));
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: "Не удалось поставить оценку",
+          position: "40px",
+        });
+      })
+      .finally(() => setRatingSubmitting(false));
+  };
+
+  const handleDeleteRating = () => {
+    if (!authContext || ratingSubmitting) return;
+
+    setRatingSubmitting(true);
+
+    api
+      .deleteRecipeRating({ recipe_id: id })
+      .then(() => {
+        return api.getRecipe({ recipe_id: id });
+      })
+      .then((res) => {
+        setRecipe(res);
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: "Не удалось удалить оценку",
+          position: "40px",
+        });
+      })
+      .finally(() => setRatingSubmitting(false));
   };
 
   const handleCommentSubmit = (e) => {
@@ -429,6 +478,9 @@ const SingleCard = ({ updateOrders }) => {
     text,
     is_favorited,
     is_in_shopping_cart,
+    rating_avg = 0,
+    rating_count = 0,
+    user_rating = null,
   } = recipe;
 
   const renderComment = (comment, isReply = false) => {
@@ -620,6 +672,16 @@ const SingleCard = ({ updateOrders }) => {
     );
   };
 
+  if (loading) {
+    return (
+      <Main>
+        <Container>
+          <div className={styles.page}>Загрузка...</div>
+        </Container>
+      </Main>
+    );
+  }
+
   return (
     <Main>
       <Container>
@@ -698,6 +760,55 @@ const SingleCard = ({ updateOrders }) => {
                     className={styles.authorLink}
                   />
                 </div>
+              </div>
+
+              <div className={styles.ratingSection}>
+                <div className={styles.ratingSummary}>
+                  <div className={styles.ratingBadge}>
+                    <span className={styles.ratingStar}>★</span>
+                    <span className={styles.ratingValue}>
+                      {Number(rating_avg || 0).toFixed(1)}
+                    </span>
+                  </div>
+                  <span className={styles.ratingCount}>
+                    Оценок: {rating_count || 0}
+                  </span>
+                </div>
+
+                {authContext ? (
+                  <div className={styles.ratingControls}>
+                    <div className={styles.ratingButtons}>
+                      {[1, 2, 3, 4, 5].map((value) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className={cn(styles.ratingBtn, {
+                            [styles.ratingBtnActive]: Number(user_rating) === value,
+                          })}
+                          onClick={() => handleRateRecipe(value)}
+                          disabled={ratingSubmitting}
+                        >
+                          {value}
+                        </button>
+                      ))}
+                    </div>
+
+                    {user_rating ? (
+                      <button
+                        type="button"
+                        className={styles.ratingDeleteBtn}
+                        onClick={handleDeleteRating}
+                        disabled={ratingSubmitting}
+                      >
+                        Убрать оценку
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className={styles.ratingAuthNote}>
+                    Войдите в аккаунт, чтобы поставить оценку
+                  </div>
+                )}
               </div>
 
               {(userContext || {}).id !== author.id && authContext && (

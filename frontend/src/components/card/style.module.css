@@ -50,6 +50,40 @@
   color:var(--accent);
 }
 
+.card__meta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+.card__rating{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+  color:var(--muted);
+  padding:6px 10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--surface);
+}
+
+.card__rating-star{
+  color:#f5b301;
+  font-size:15px;
+  line-height:1;
+}
+
+.card__rating-value{
+  font-weight:700;
+  color:var(--text);
+}
+
+.card__rating-count{
+  color:var(--muted);
+}
+
 .card__data{
   display:grid;
   grid-template-columns:36px minmax(0, 1fr) auto;
@@ -229,6 +263,15 @@
 
   .card__title{
     font-size:16px;
+  }
+
+    .card__meta{
+    margin-bottom:10px;
+  }
+
+  .card__rating{
+    font-size:13px;
+    padding:5px 9px;
   }
 
   .card__controls{

@@ -171,6 +171,31 @@ class Api {
     }).then(this.checkResponse);
   }
 
+    rateRecipe({ recipe_id, rating }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/recipes/${recipe_id}/rating/`, {
+      method: "POST",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({ rating }),
+    }).then(this.checkResponse);
+  }
+
+  deleteRecipeRating({ recipe_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/api/recipes/${recipe_id}/rating/`, {
+      method: "DELETE",
+      headers: {
+        ...this._headers,
+        authorization: `Token ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
   getRecipeComments({ recipe_id }) {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Token ${token}` } : {};

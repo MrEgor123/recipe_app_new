@@ -14,6 +14,8 @@ const Card = ({
   is_in_shopping_cart,
   tags,
   cooking_time,
+  rating_avg = 0,
+  rating_count = 0,
   author = {},
   handleLike,
   handleAddToCart,
@@ -39,6 +41,7 @@ const Card = ({
           }}
         />
       )}
+
       <TagsContainer tags={tags} className={styles.card__tag} />
 
       <LinkComponent
@@ -50,6 +53,7 @@ const Card = ({
           />
         }
       />
+
       <div className={styles.card__body}>
         <LinkComponent
           className={styles.card__title}
@@ -63,26 +67,40 @@ const Card = ({
             setWhiteSpaceValue("nowrap");
           }}
         />
+
+        <div className={styles.card__meta}>
+          <div className={styles.card__rating}>
+            <span className={styles["card__rating-star"]}>★</span>
+            <span className={styles["card__rating-value"]}>
+              {Number(rating_avg || 0).toFixed(1)}
+            </span>
+            <span className={styles["card__rating-count"]}>
+              ({rating_count || 0})
+            </span>
+          </div>
+        </div>
+
         <div className={styles.card__data}>
           <div
             className={styles["card__author-image"]}
             style={{
-              "background-image": `url(${author.avatar || DefaultImage})`,
+              backgroundImage: `url(${author.avatar || DefaultImage})`,
             }}
           />
           <div className={styles.card__author}>
             <LinkComponent
               href={`/user/${author.id}`}
-              title={`${author.first_name} ${author.last_name}`}
+              title={`${author.first_name || ""} ${author.last_name || ""}`.trim() || author.username || "Пользователь"}
               className={styles.card__link}
             />
           </div>
           <div className={styles.card__time}>{cooking_time} мин.</div>
         </div>
+
         <div className={styles.card__controls}>
           <Button
             className={styles.card__add}
-            clickHandler={(_) => {
+            clickHandler={() => {
               if (!authContext) {
                 return setToLogin(true);
               }
@@ -100,14 +118,15 @@ const Card = ({
               </>
             ) : (
               <>
-                <Icons.PlusIcon /> Добавить в покупки
+                <Icons.PlusIcon />
+                Добавить в покупки
               </>
             )}
           </Button>
 
           <Button
             modifier="style_none"
-            clickHandler={(_) => {
+            clickHandler={() => {
               if (!authContext) {
                 return setToLogin(true);
               }
@@ -116,7 +135,7 @@ const Card = ({
             className={cn(styles["card__save-button"], {
               [styles["card__save-button_active"]]: is_favorited,
             })}
-            data-tooltip-id={id}
+            data-tooltip-id={id.toString()}
             data-tooltip-content={
               is_favorited ? "Удалить из избранного" : "Добавить в избранное"
             }
@@ -124,6 +143,7 @@ const Card = ({
           >
             <Icons.LikeIcon />
           </Button>
+
           <Tooltip id={id.toString()} />
         </div>
       </div>

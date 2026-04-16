@@ -1,0 +1,257 @@
+:root {
+  --recepto-bg: #f5f7fb;
+  --recepto-surface: #ffffff;
+  --recepto-surface-2: #f8fafc;
+  --recepto-text: #111827;
+  --recepto-muted: #6b7280;
+  --recepto-border: #e5e7eb;
+  --recepto-primary: #2563eb;
+  --recepto-primary-hover: #1d4ed8;
+  --recepto-danger: #dc2626;
+  --recepto-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+}
+
+html, body {
+  font-family: "Inter", sans-serif !important;
+  background: var(--recepto-bg) !important;
+  color: var(--recepto-text) !important;
+}
+
+/* login */
+.recepto-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.10), transparent 30%),
+    var(--recepto-bg);
+}
+
+.recepto-login-card {
+  width: 100%;
+  max-width: 960px;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--recepto-surface);
+  box-shadow: var(--recepto-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.recepto-login-brand {
+  min-height: 620px;
+  padding: 48px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(59, 130, 246, 0.88)),
+    #2563eb;
+  color: #fff;
+}
+
+.recepto-login-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.recepto-login-title {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.recepto-login-subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.82);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.recepto-login-form-wrap {
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.recepto-login-heading {
+  margin: 0 0 12px;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--recepto-text);
+}
+
+.recepto-login-text {
+  margin: 0 0 28px;
+  color: var(--recepto-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.recepto-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.recepto-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recepto-field label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--recepto-text);
+}
+
+.recepto-field input {
+  width: 100%;
+  height: 52px;
+  border: 1px solid var(--recepto-border);
+  border-radius: 14px;
+  padding: 0 16px;
+  background: var(--recepto-surface-2);
+  color: var(--recepto-text);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.recepto-field input:focus {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+  background: #fff;
+}
+
+.recepto-login-button {
+  margin-top: 8px;
+  height: 54px;
+  border: none;
+  border-radius: 14px;
+  background: var(--recepto-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.recepto-login-button:hover {
+  background: var(--recepto-primary-hover);
+}
+
+.recepto-login-button:active {
+  transform: translateY(1px);
+}
+
+.recepto-login-error {
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(220, 38, 38, 0.08);
+  color: var(--recepto-danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* admin global */
+.navbar, .page, .content, .wrapper {
+  font-family: "Inter", sans-serif !important;
+}
+
+.navbar.navbar-expand-md {
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--recepto-border);
+}
+
+.navbar-brand {
+  font-weight: 800 !important;
+  font-size: 22px !important;
+  color: #0f172a !important;
+}
+
+.btn,
+button,
+input[type="submit"],
+input[type="button"] {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+}
+
+.btn-primary {
+  background: var(--recepto-primary) !important;
+  border-color: var(--recepto-primary) !important;
+}
+
+.btn-primary:hover {
+  background: var(--recepto-primary-hover) !important;
+  border-color: var(--recepto-primary-hover) !important;
+}
+
+.card,
+.table,
+.dropdown-menu,
+.form-control,
+.form-select,
+.alert {
+  border-radius: 14px !important;
+}
+
+.card {
+  border: 1px solid var(--recepto-border) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06) !important;
+}
+
+.form-control,
+.form-select {
+  min-height: 44px !important;
+  border-color: var(--recepto-border) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10) !important;
+}
+
+.table thead th {
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.table tbody td {
+  vertical-align: middle;
+}
+
+@media (max-width: 900px) {
+  .recepto-login-card {
+    grid-template-columns: 1fr;
+  }
+
+  .recepto-login-brand {
+    min-height: auto;
+    padding: 32px;
+  }
+
+  .recepto-login-form-wrap {
+    padding: 32px;
+  }
+}

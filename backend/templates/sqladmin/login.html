@@ -1,0 +1,224 @@
+<style>
+  .recepto-login-page {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background:
+      radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32%),
+      radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.10), transparent 30%),
+      #f5f7fb;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .recepto-login-card {
+    width: 100%;
+    max-width: 980px;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    overflow: hidden;
+    border-radius: 28px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .recepto-login-brand {
+    min-height: 620px;
+    padding: 48px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.96), rgba(59, 130, 246, 0.88));
+    color: #fff;
+  }
+
+  .recepto-login-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .recepto-login-title {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .recepto-login-subtitle {
+    margin-top: 6px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.82);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .recepto-login-form-wrap {
+    padding: 56px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #ffffff;
+  }
+
+  .recepto-login-heading {
+    margin: 0 0 12px;
+    font-size: 34px;
+    line-height: 1.1;
+    font-weight: 800;
+    color: #111827;
+  }
+
+  .recepto-login-text {
+    margin: 0 0 28px;
+    color: #6b7280;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .recepto-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .recepto-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .recepto-field label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .recepto-field input {
+    width: 100%;
+    height: 52px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 0 16px;
+    background: #f8fafc;
+    color: #111827;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .recepto-field input:focus {
+    border-color: rgba(37, 99, 235, 0.55);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    background: #fff;
+  }
+
+  .recepto-login-button {
+    margin-top: 8px;
+    height: 54px;
+    border: none;
+    border-radius: 14px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+
+  .recepto-login-button:hover {
+    background: #1d4ed8;
+  }
+
+  .recepto-login-button:active {
+    transform: translateY(1px);
+  }
+
+  .recepto-login-error {
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 900px) {
+    .recepto-login-card {
+      grid-template-columns: 1fr;
+    }
+
+    .recepto-login-brand {
+      min-height: auto;
+      padding: 32px;
+    }
+
+    .recepto-login-form-wrap {
+      padding: 32px;
+    }
+  }
+</style>
+
+<div class="recepto-login-page">
+  <div class="recepto-login-card">
+    <div class="recepto-login-brand">
+      <div class="recepto-login-logo">R</div>
+      <div>
+        <div class="recepto-login-title">Recepto</div>
+        <div class="recepto-login-subtitle">панель администратора</div>
+      </div>
+    </div>
+
+    <div class="recepto-login-form-wrap">
+      <h1 class="recepto-login-heading">Вход в админку</h1>
+      <p class="recepto-login-text">
+        Войдите, чтобы управлять рецептами, пользователями, комментариями и рейтингами
+      </p>
+
+      <form action="{{ request.url }}" method="post" class="recepto-login-form">
+        <div class="recepto-field">
+          <label for="username">Логин</label>
+          <input
+            id="username"
+            name="username"
+            type="text"
+            placeholder="Введите логин"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="recepto-field">
+          <label for="password">Пароль</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Введите пароль"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        {% if error %}
+          <div class="recepto-login-error">{{ error }}</div>
+        {% endif %}
+
+        <button type="submit" class="recepto-login-button">
+          Войти
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

@@ -17,3 +17,9 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
     comments = relationship("Comment", cascade="all, delete-orphan", passive_deletes=True)
+
+    def __str__(self) -> str:
+        full_name = f"{self.first_name} {self.last_name}".strip()
+        if full_name:
+            return f"{full_name} ({self.username})"
+        return self.username

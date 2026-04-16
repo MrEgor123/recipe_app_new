@@ -22,7 +22,7 @@ dependencies = [
   "reportlab>=4.0",
 
   "itsdangerous>=2.2.0",
-  "sqladmin==0.16.1",
+  "sqladmin==0.24.0",
   "psycopg2-binary==2.9.9",
 ]
 

@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:16
+    env_file:
+      - ./infra/env/db.env.example
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    image: python:3.12-slim
+    working_dir: /app
+    env_file:
+      - ./infra/env/backend.env.example
+    volumes:
+      - ./backend:/app
+      - ./backend/media:/app/media
+    depends_on:
+      - db
+    command: >
+      bash -lc "
+      pip install -U pip &&
+      pip install -e . &&
+      alembic upgrade head &&
+      PYTHONPATH=/app/src uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+    restart: unless-stopped
+
+  frontend-build:
+    image: node:18-alpine
+    working_dir: /frontend
+    volumes:
+      - ./frontend:/frontend
+      - frontend_build:/frontend/result_build
+    command: >
+      sh -lc "
+      npm install --legacy-peer-deps &&
+      rm -rf /tmp/frontend-build &&
+      mkdir -p /tmp/frontend-build &&
+      BUILD_PATH=/tmp/frontend-build npm run build &&
+      mkdir -p /frontend/result_build &&
+      find /frontend/result_build -mindepth 1 -maxdepth 1 -exec rm -rf {} + &&
+      cp -r /tmp/frontend-build/* /frontend/result_build/ &&
+      ls -lah /frontend/result_build
+      "
+    restart: "no"
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - backend
+      - frontend-build
+    ports:
+      - "8080:80"
+    volumes:
+      - frontend_build:/usr/share/nginx/html:ro
+      - ./backend/media:/media:ro
+      - ./infra/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+    external: true
+    name: infra_pg_data
+  frontend_build:

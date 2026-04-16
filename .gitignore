@@ -6,23 +6,34 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
 
 # virtualenv
 .venv/
 venv/
+backend/venv/
 
 # env
 .env
 .env.*
+!.env.example
+!**/*.env.example
 
 # backend build artifacts
 *.egg-info/
+*.egg
 
 # frontend
 frontend/node_modules/
 frontend/node_modules_old/
 frontend/build/
 frontend/result_build/
+
+# media / static local artifacts
+backend/media/
+backend/static/
 
 # editors
 .idea/

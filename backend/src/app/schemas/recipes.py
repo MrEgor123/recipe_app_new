@@ -8,10 +8,12 @@ class RecipeStepRead(BaseModel):
     text: str
     duration_sec: Optional[int] = None
 
+
 class RecipeStepIn(BaseModel):
     position: PositiveInt
     text: str = Field(min_length=1, max_length=5000)
     duration_sec: Optional[PositiveInt] = None
+
 
 class RecipeIngredientIn(BaseModel):
     ingredient_id: int
@@ -23,24 +25,7 @@ class RecipeIngredientOut(BaseModel):
     name: str
     unit: str
     amount: float
-
-
-class RecipeCreate(BaseModel):
-    title: str = Field(min_length=2, max_length=120)
-    description: str = Field(min_length=1, max_length=5000)
-    cooking_time_minutes: PositiveInt
-    tag_ids: List[int] = Field(default_factory=list)
-    steps: List[RecipeStepIn] = Field(default_factory=list)
-    ingredients: List[RecipeIngredientIn] = Field(default_factory=list)
-
-
-class RecipeUpdate(BaseModel):
-    title: Optional[str] = Field(default=None, min_length=2, max_length=120)
-    description: Optional[str] = Field(default=None, min_length=1, max_length=5000)
-    cooking_time_minutes: Optional[PositiveInt] = None
-    tag_ids: Optional[List[int]] = None
-    ingredients: Optional[List[RecipeIngredientIn]] = None
-    steps: Optional[List[RecipeStepIn]] = None
+    base_amount: float
 
 
 class RecipeTagOut(BaseModel):
@@ -50,11 +35,42 @@ class RecipeTagOut(BaseModel):
     color: str
 
 
+class NutritionOut(BaseModel):
+    calories: float
+    protein: float
+    fat: float
+    carbs: float
+
+
+class RecipeCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=120)
+    description: str = Field(min_length=1, max_length=5000)
+    cooking_time_minutes: PositiveInt
+    base_servings: PositiveInt = 1
+    tag_ids: List[int] = Field(default_factory=list)
+    steps: List[RecipeStepIn] = Field(default_factory=list)
+    ingredients: List[RecipeIngredientIn] = Field(default_factory=list)
+
+
+class RecipeUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=2, max_length=120)
+    description: Optional[str] = Field(default=None, min_length=1, max_length=5000)
+    cooking_time_minutes: Optional[PositiveInt] = None
+    base_servings: Optional[PositiveInt] = None
+    tag_ids: Optional[List[int]] = None
+    ingredients: Optional[List[RecipeIngredientIn]] = None
+    steps: Optional[List[RecipeStepIn]] = None
+
+
 class RecipeRead(BaseModel):
     id: int
     title: str
     description: str
     cooking_time_minutes: int
+    base_servings: int
+    selected_servings: int
     tags: List[RecipeTagOut]
     ingredients: List[RecipeIngredientOut]
     steps: List[RecipeStepRead] = []
+    nutrition_total: NutritionOut
+    nutrition_per_serving: NutritionOut

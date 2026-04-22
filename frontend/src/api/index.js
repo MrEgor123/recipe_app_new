@@ -54,7 +54,7 @@ class Api {
   }
 
   signup({ email, password, username, first_name, last_name }) {
-    return fetch(`/api/users/`, {
+    return fetch("/api/users/", {
       method: "POST",
       headers: this._headers,
       body: JSON.stringify({
@@ -69,7 +69,7 @@ class Api {
 
   getUserData() {
     const token = localStorage.getItem("token");
-    return fetch(`/api/users/me/`, {
+    return fetch("/api/users/me/", {
       method: "GET",
       headers: {
         ...this._headers,
@@ -80,7 +80,7 @@ class Api {
 
   changePassword({ current_password, new_password }) {
     const token = localStorage.getItem("token");
-    return fetch(`/api/users/set_password/`, {
+    return fetch("/api/users/set_password/", {
       method: "POST",
       headers: {
         ...this._headers,
@@ -92,7 +92,7 @@ class Api {
 
   changeAvatar({ file }) {
     const token = localStorage.getItem("token");
-    return fetch(`/api/users/me/avatar/`, {
+    return fetch("/api/users/me/avatar/", {
       method: "PUT",
       headers: {
         ...this._headers,
@@ -104,7 +104,7 @@ class Api {
 
   deleteAvatar() {
     const token = localStorage.getItem("token");
-    return fetch(`/api/users/me/avatar/`, {
+    return fetch("/api/users/me/avatar/", {
       method: "DELETE",
       headers: {
         ...this._headers,
@@ -114,7 +114,7 @@ class Api {
   }
 
   resetPassword({ email }) {
-    return fetch(`/api/users/reset_password/`, {
+    return fetch("/api/users/reset_password/", {
       method: "POST",
       headers: {
         ...this._headers,
@@ -122,8 +122,6 @@ class Api {
       body: JSON.stringify({ email }),
     }).then(this.checkResponse);
   }
-
-  // recipes
 
   getRecipes({
     page = 1,
@@ -158,7 +156,7 @@ class Api {
     ).then(this.checkResponse);
   }
 
-  getRecipe({ recipe_id }) {
+  getRecipe({ recipe_id } = {}) {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Token ${token}` } : {};
 
@@ -171,7 +169,21 @@ class Api {
     }).then(this.checkResponse);
   }
 
-    rateRecipe({ recipe_id, rating }) {
+  getRecipeCalculated({ recipe_id, servings } = {}) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Token ${token}` } : {};
+    const servingsQuery = servings ? `?servings=${servings}` : "";
+
+    return fetch(`/appapi/recipes/${recipe_id}${servingsQuery}`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  rateRecipe({ recipe_id, rating }) {
     const token = localStorage.getItem("token");
 
     return fetch(`/api/recipes/${recipe_id}/rating/`, {
@@ -356,8 +368,6 @@ class Api {
     }).then(this.checkResponse);
   }
 
-  // subscriptions
-
   getSubscriptions({ page, limit = 6, recipes_limit = 3 }) {
     const token = localStorage.getItem("token");
 
@@ -397,8 +407,6 @@ class Api {
     }).then(this.checkResponse);
   }
 
-  // ingredients
-
   getIngredients({ name }) {
     return fetch(`/api/ingredients/?name=${name}`, {
       method: "GET",
@@ -408,10 +416,8 @@ class Api {
     }).then(this.checkResponse);
   }
 
-  // tags
-
   getTags() {
-    return fetch(`/api/tags/`, {
+    return fetch("/api/tags/", {
       method: "GET",
       headers: {
         ...this._headers,
@@ -458,7 +464,7 @@ class Api {
   downloadFile() {
     const token = localStorage.getItem("token");
 
-    return fetch(`/api/recipes/download_shopping_cart/`, {
+    return fetch("/api/recipes/download_shopping_cart/", {
       method: "GET",
       headers: {
         ...this._headers,

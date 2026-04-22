@@ -120,6 +120,8 @@ const ReplyIcon = () => (
 
 const SingleCard = ({ updateOrders }) => {
   const [loading, setLoading] = useState(true);
+  const [servings, setServings] = useState(1);
+
   const [notificationPosition, setNotificationPosition] = useState("-100%");
   const [notificationError, setNotificationError] = useState({
     text: "",
@@ -182,6 +184,50 @@ const SingleCard = ({ updateOrders }) => {
         setComments([]);
       })
       .finally(() => setCommentsLoading(false));
+  };
+
+  const loadRecipe = ({ selectedServings } = {}) => {
+    return Promise.all([
+      api.getRecipe({ recipe_id: id }),
+      api.getRecipeCalculated({
+        recipe_id: id,
+        servings: selectedServings,
+      }),
+    ])
+      .then(([baseRecipe, calcRecipe]) => {
+        const mergedRecipe = {
+          ...baseRecipe,
+          name: baseRecipe.name || calcRecipe.name || calcRecipe.title || "",
+          text: baseRecipe.text || calcRecipe.text || calcRecipe.description || "",
+          image: baseRecipe.image || calcRecipe.image || "",
+          author: baseRecipe.author || calcRecipe.author || {},
+          cooking_time:
+            baseRecipe.cooking_time ||
+            calcRecipe.cooking_time ||
+            calcRecipe.cooking_time_minutes ||
+            0,
+          ingredients: (calcRecipe.ingredients || []).map((item) => ({
+            ...item,
+            measurement_unit: item.measurement_unit || item.unit,
+          })),
+          base_servings: calcRecipe.base_servings || 1,
+          selected_servings:
+            calcRecipe.selected_servings ||
+            selectedServings ||
+            calcRecipe.base_servings ||
+            1,
+          nutrition_total: calcRecipe.nutrition_total || {},
+          nutrition_per_serving: calcRecipe.nutrition_per_serving || {},
+        };
+
+        setRecipe(mergedRecipe);
+        setServings(mergedRecipe.selected_servings || 1);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.log(err);
+        history.push("/not-found");
+      });
   };
 
   const replaceCommentInTree = (items, commentId, updater) =>
@@ -281,12 +327,7 @@ const SingleCard = ({ updateOrders }) => {
 
     api
       .deleteRecipeRating({ recipe_id: id })
-      .then(() => {
-        return api.getRecipe({ recipe_id: id });
-      })
-      .then((res) => {
-        setRecipe(res);
-      })
+      .then(() => loadRecipe({ selectedServings: servings }))
       .catch((err) => {
         console.log(err);
         setNotificationError({
@@ -454,17 +495,18 @@ const SingleCard = ({ updateOrders }) => {
       .finally(() => setCommentActionLoading(false));
   };
 
-  useEffect(() => {
-    api
-      .getRecipe({ recipe_id: id })
-      .then((res) => {
-        setRecipe(res);
-        setLoading(false);
-      })
-      .catch(() => {
-        history.push("/not-found");
-      });
+  const handleDecreaseServings = () => {
+    if (servings <= 1) return;
+    loadRecipe({ selectedServings: servings - 1 });
+  };
 
+  const handleIncreaseServings = () => {
+    loadRecipe({ selectedServings: servings + 1 });
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    loadRecipe();
     loadComments();
   }, [id]);
 
@@ -474,13 +516,17 @@ const SingleCard = ({ updateOrders }) => {
     tags,
     cooking_time,
     name,
-    ingredients,
+    ingredients = [],
     text,
     is_favorited,
     is_in_shopping_cart,
     rating_avg = 0,
     rating_count = 0,
     user_rating = null,
+    base_servings = 1,
+    selected_servings = 1,
+    nutrition_total = {},
+    nutrition_per_serving = {},
   } = recipe;
 
   const renderComment = (comment, isReply = false) => {
@@ -692,7 +738,7 @@ const SingleCard = ({ updateOrders }) => {
         </MetaTags>
 
         <div className={styles.page}>
-          <div className={styles.layout}>
+          <div className={styles.heroGrid}>
             <div className={styles.media}>
               <img src={image} alt={name} className={styles.image} />
             </div>
@@ -742,11 +788,8 @@ const SingleCard = ({ updateOrders }) => {
 
               <div className={styles.metaRow}>
                 <TagsContainer tags={tags} />
-
                 <span className={styles.metaItem}>{cooking_time} мин.</span>
-
                 <span className={styles.divider} />
-
                 <div className={styles.metaItem}>
                   <div
                     className={styles.authorAvatar}
@@ -876,18 +919,92 @@ const SingleCard = ({ updateOrders }) => {
                   </Button>
                 )}
               </div>
+            </div>
+          </div>
 
-              <div className={styles.section}>
-                <div className={cn(styles.card, styles.ingredientsCard)}>
-                  <Ingredients ingredients={ingredients} />
+          <div className={styles.detailsGrid}>
+            <div className={styles.infoCard}>
+              <Ingredients ingredients={ingredients} />
+            </div>
+
+            <div className={styles.infoCard}>
+              <div className={styles.servingsBlock}>
+                <div className={styles.servingsInfo}>
+                  <div className={styles.servingsTitle}>Порции</div>
+                  <div className={styles.servingsHint}>
+                    Базовое количество порций: {base_servings}
+                  </div>
+                </div>
+
+                <div className={styles.servingsControls}>
+                  <button
+                    type="button"
+                    className={styles.servingsBtn}
+                    onClick={handleDecreaseServings}
+                    disabled={servings <= 1}
+                  >
+                    −
+                  </button>
+
+                  <div className={styles.servingsValue}>{selected_servings}</div>
+
+                  <button
+                    type="button"
+                    className={styles.servingsBtn}
+                    onClick={handleIncreaseServings}
+                  >
+                    +
+                  </button>
                 </div>
               </div>
 
-              <div className={styles.section}>
-                <div className={styles.card}>
-                  <Description description={text} />
+              <div className={styles.nutritionBlock}>
+                <div className={styles.nutritionTitle}>КБЖУ</div>
+
+                <div className={styles.nutritionGrid}>
+                  <div className={styles.nutritionItem}>
+                    <span className={styles.nutritionLabel}>Калории</span>
+                    <span className={styles.nutritionValue}>
+                      {Number(nutrition_total.calories || 0).toFixed(2)} ккал
+                    </span>
+                  </div>
+
+                  <div className={styles.nutritionItem}>
+                    <span className={styles.nutritionLabel}>Белки</span>
+                    <span className={styles.nutritionValue}>
+                      {Number(nutrition_total.protein || 0).toFixed(2)} г
+                    </span>
+                  </div>
+
+                  <div className={styles.nutritionItem}>
+                    <span className={styles.nutritionLabel}>Жиры</span>
+                    <span className={styles.nutritionValue}>
+                      {Number(nutrition_total.fat || 0).toFixed(2)} г
+                    </span>
+                  </div>
+
+                  <div className={styles.nutritionItem}>
+                    <span className={styles.nutritionLabel}>Углеводы</span>
+                    <span className={styles.nutritionValue}>
+                      {Number(nutrition_total.carbs || 0).toFixed(2)} г
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.nutritionPerServing}>
+                  На 1 порцию:{" "}
+                  {Number(nutrition_per_serving.calories || 0).toFixed(2)} ккал /{" "}
+                  {Number(nutrition_per_serving.protein || 0).toFixed(2)} Б /{" "}
+                  {Number(nutrition_per_serving.fat || 0).toFixed(2)} Ж /{" "}
+                  {Number(nutrition_per_serving.carbs || 0).toFixed(2)} У
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className={styles.fullWidthSection}>
+            <div className={styles.infoCard}>
+              <Description description={text} />
             </div>
           </div>
 

@@ -1,14 +1,16 @@
 from typing import List, Optional
 
-from sqlalchemy import func, select, delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.favorite import Favorite
 from app.models.recipe import Recipe
+from app.models.recipe_step import RecipeStep
 from app.models.recipe_tag import RecipeTag
 from app.models.shopping_cart import ShoppingCartItem
-from app.models.recipe_step import RecipeStep
 from app.schemas.recipes import RecipeCreate, RecipeUpdate
+from app.models.ingredient import Ingredient
+from app.models.recipe_ingredient import RecipeIngredient
 
 
 class RecipeRepository:
@@ -22,6 +24,7 @@ class RecipeRepository:
             title=payload.title,
             description=payload.description,
             cooking_time_minutes=payload.cooking_time_minutes,
+            base_servings=payload.base_servings,
         )
         session.add(recipe)
         await session.commit()
@@ -42,6 +45,8 @@ class RecipeRepository:
             recipe.description = data["description"]
         if "cooking_time_minutes" in data:
             recipe.cooking_time_minutes = data["cooking_time_minutes"]
+        if "base_servings" in data:
+            recipe.base_servings = data["base_servings"]
 
         await session.commit()
         await session.refresh(recipe)
@@ -139,7 +144,6 @@ class RecipeRepository:
 
         await session.execute(delete(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id))
         if ingredients_in:
-            # важно: у тебя сюда иногда прилетает list[dict], поэтому нормализуем
             normalized = []
             for item in ingredients_in:
                 if isinstance(item, dict):
@@ -161,7 +165,6 @@ class RecipeRepository:
     async def _replace_steps(self, session: AsyncSession, recipe_id: int, steps_in) -> None:
         await session.execute(delete(RecipeStep).where(RecipeStep.recipe_id == recipe_id))
         if steps_in:
-            # шаги тоже нормализуем: list[dict] или list[pydantic]
             normalized = []
             for item in steps_in:
                 if isinstance(item, dict):
@@ -197,11 +200,18 @@ class RecipeRepository:
         return list(result.scalars().all())
 
     async def get_recipe_ingredients(self, session: AsyncSession, recipe_id: int):
-        from app.models.ingredient import Ingredient
-        from app.models.recipe_ingredient import RecipeIngredient
 
         stmt = (
-            select(Ingredient.id, Ingredient.name, Ingredient.unit, RecipeIngredient.amount)
+            select(
+                Ingredient.id,
+                Ingredient.name,
+                Ingredient.unit,
+                RecipeIngredient.amount,
+                Ingredient.calories_per_100g,
+                Ingredient.protein_per_100g,
+                Ingredient.fat_per_100g,
+                Ingredient.carbs_per_100g,
+            )
             .join(RecipeIngredient, RecipeIngredient.ingredient_id == Ingredient.id)
             .where(RecipeIngredient.recipe_id == recipe_id)
             .order_by(Ingredient.name.asc())

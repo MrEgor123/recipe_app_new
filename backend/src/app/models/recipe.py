@@ -17,6 +17,7 @@ class Recipe(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     image: Mapped[str | None] = mapped_column(Text, nullable=True)
     cooking_time_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    base_servings: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
     author = relationship("User")
     comments = relationship("Comment", cascade="all, delete-orphan", passive_deletes=True)

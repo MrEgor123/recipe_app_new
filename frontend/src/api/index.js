@@ -5,29 +5,42 @@ class Api {
   }
 
   checkResponse(res) {
-    return new Promise((resolve, reject) => {
-      if (res.status === 204) {
-        return resolve(res);
+    if (res.status === 204 || res.status === 304) {
+      return Promise.resolve({});
+    }
+
+    return res.text().then((text) => {
+      let data = {};
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
       }
-      const func = res.status < 400 ? resolve : reject;
-      res.json().then((data) => func(data));
+
+      if (res.ok) {
+        return data;
+      }
+
+      return Promise.reject(data);
     });
   }
 
   checkFileDownloadResponse(res) {
-    return new Promise((resolve, reject) => {
-      if (res.status < 400) {
-        return res.blob().then((blob) => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "shopping-list";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        });
-      }
-      reject();
+    if (!res.ok) {
+      return Promise.reject({});
+    }
+
+    return res.blob().then((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "shopping-list";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      return {};
     });
   }
 
@@ -39,18 +52,19 @@ class Api {
         email,
         password,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   signout() {
     const token = localStorage.getItem("token");
+
     return fetch("/api/auth/token/logout/", {
       method: "POST",
       headers: {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   signup({ email, password, username, first_name, last_name }) {
@@ -64,18 +78,19 @@ class Api {
         first_name,
         last_name,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getUserData() {
     const token = localStorage.getItem("token");
+
     return fetch("/api/users/me/", {
       method: "GET",
       headers: {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getMyProfile() {
@@ -87,7 +102,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getProfile({ user_id }) {
@@ -100,7 +115,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   updateMyProfile({ status, bio, cover_image }) {
@@ -126,7 +141,7 @@ class Api {
         authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getMyCollectionsProfile() {
@@ -138,7 +153,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getUserCollections({ user_id }) {
@@ -151,7 +166,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getMyProfileComments() {
@@ -163,7 +178,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getUserProfileComments({ user_id }) {
@@ -176,11 +191,12 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   changePassword({ current_password, new_password }) {
     const token = localStorage.getItem("token");
+
     return fetch("/api/users/set_password/", {
       method: "POST",
       headers: {
@@ -188,11 +204,12 @@ class Api {
         authorization: `Token ${token}`,
       },
       body: JSON.stringify({ current_password, new_password }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   changeAvatar({ file }) {
     const token = localStorage.getItem("token");
+
     return fetch("/api/users/me/avatar/", {
       method: "PUT",
       headers: {
@@ -200,18 +217,19 @@ class Api {
         authorization: `Token ${token}`,
       },
       body: JSON.stringify({ avatar: file }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   deleteAvatar() {
     const token = localStorage.getItem("token");
+
     return fetch("/api/users/me/avatar/", {
       method: "DELETE",
       headers: {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   resetPassword({ email }) {
@@ -221,7 +239,7 @@ class Api {
         ...this._headers,
       },
       body: JSON.stringify({ email }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getRecipes({
@@ -254,7 +272,7 @@ class Api {
           ...authorization,
         },
       }
-    ).then(this.checkResponse);
+    ).then((res) => this.checkResponse(res));
   }
 
   getRecipe({ recipe_id } = {}) {
@@ -267,7 +285,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getRecipeCalculated({ recipe_id, servings } = {}) {
@@ -281,7 +299,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   rateRecipe({ recipe_id, rating }) {
@@ -294,7 +312,7 @@ class Api {
         authorization: `Token ${token}`,
       },
       body: JSON.stringify({ rating }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   deleteRecipeRating({ recipe_id }) {
@@ -306,7 +324,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getRecipeComments({ recipe_id }) {
@@ -319,7 +337,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   createRecipeComment({ recipe_id, text, parent_id = null }) {
@@ -332,7 +350,7 @@ class Api {
         authorization: `Token ${token}`,
       },
       body: JSON.stringify({ text, parent_id }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   patchComment({ comment_id, text }) {
@@ -345,7 +363,7 @@ class Api {
         authorization: `Token ${token}`,
       },
       body: JSON.stringify({ text }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   deleteComment({ comment_id }) {
@@ -357,7 +375,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   createRecipe({
@@ -384,7 +402,7 @@ class Api {
         text,
         ingredients,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   updateRecipe(
@@ -408,7 +426,7 @@ class Api {
         text,
         ingredients,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   addToFavorites({ id }) {
@@ -420,7 +438,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   removeFromFavorites({ id }) {
@@ -432,7 +450,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   copyRecipeLink({ id }) {
@@ -441,7 +459,7 @@ class Api {
       headers: {
         ...this._headers,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getUser({ id }) {
@@ -454,7 +472,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getUsers({ page = 1, limit = 6 }) {
@@ -466,7 +484,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getSubscriptions({ page, limit = 6, recipes_limit = 3 }) {
@@ -481,7 +499,7 @@ class Api {
           authorization: `Token ${token}`,
         },
       }
-    ).then(this.checkResponse);
+    ).then((res) => this.checkResponse(res));
   }
 
   deleteSubscriptions({ author_id }) {
@@ -493,7 +511,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   subscribe({ author_id }) {
@@ -505,7 +523,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getIngredients({ name }) {
@@ -514,7 +532,7 @@ class Api {
       headers: {
         ...this._headers,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getTags() {
@@ -523,7 +541,7 @@ class Api {
       headers: {
         ...this._headers,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   addToOrders({ id }) {
@@ -535,7 +553,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   removeFromOrders({ id }) {
@@ -547,7 +565,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   deleteRecipe({ recipe_id }) {
@@ -559,7 +577,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   downloadFile() {
@@ -571,7 +589,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkFileDownloadResponse);
+    }).then((res) => this.checkFileDownloadResponse(res));
   }
 
   likeComment({ comment_id }) {
@@ -583,7 +601,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   unlikeComment({ comment_id }) {
@@ -595,7 +613,7 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getCollections() {
@@ -607,7 +625,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   createCollection({ name, description = "" }) {
@@ -623,7 +641,7 @@ class Api {
         name,
         description: description || null,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getCollection({ collection_id }) {
@@ -636,7 +654,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   updateCollection({ collection_id, name, description = "" }) {
@@ -652,7 +670,7 @@ class Api {
         name,
         description: description || null,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   deleteCollection({ collection_id }) {
@@ -664,7 +682,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getCollectionRecipes({ collection_id }) {
@@ -677,7 +695,7 @@ class Api {
         ...this._headers,
         ...authorization,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   addRecipeToCollection({ collection_id, recipe_id }) {
@@ -689,7 +707,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   removeRecipeFromCollection({ collection_id, recipe_id }) {
@@ -701,7 +719,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   getRecipeCollections({ recipe_id }) {
@@ -713,7 +731,7 @@ class Api {
         ...this._headers,
         authorization: `Bearer ${token}`,
       },
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 
   updateRecipeCollections({ recipe_id, collection_ids = [] }) {
@@ -728,7 +746,7 @@ class Api {
       body: JSON.stringify({
         collection_ids,
       }),
-    }).then(this.checkResponse);
+    }).then((res) => this.checkResponse(res));
   }
 }
 

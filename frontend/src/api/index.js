@@ -98,6 +98,7 @@ class Api {
 
     return fetch("/users/me/profile/", {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -111,6 +112,7 @@ class Api {
 
     return fetch(`/users/${user_id}/profile/`, {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -149,6 +151,7 @@ class Api {
 
     return fetch("/users/me/collections/", {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -162,6 +165,7 @@ class Api {
 
     return fetch(`/users/${user_id}/collections/`, {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -174,6 +178,7 @@ class Api {
 
     return fetch("/users/me/comments/", {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -187,6 +192,7 @@ class Api {
 
     return fetch(`/users/${user_id}/comments/`, {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -621,6 +627,7 @@ class Api {
 
     return fetch("/collections/", {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -650,6 +657,7 @@ class Api {
 
     return fetch(`/collections/${collection_id}/`, {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -691,6 +699,7 @@ class Api {
 
     return fetch(`/collections/${collection_id}/recipes/`, {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -727,6 +736,7 @@ class Api {
 
     return fetch(`/recipes/${recipe_id}/collections/`, {
       method: "GET",
+      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,

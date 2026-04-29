@@ -4,8 +4,13 @@ class Api {
     this._headers = headers;
   }
 
+  _withNoCache(path) {
+    const separator = path.includes("?") ? "&" : "?";
+    return `${path}${separator}_=${Date.now()}`;
+  }
+
   checkResponse(res) {
-    if (res.status === 204 || res.status === 304) {
+    if (res.status === 204) {
       return Promise.resolve({});
     }
 
@@ -96,9 +101,8 @@ class Api {
   getMyProfile() {
     const token = localStorage.getItem("token");
 
-    return fetch("/users/me/profile/", {
+    return fetch(this._withNoCache("/users/me/profile/"), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -110,9 +114,8 @@ class Api {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Bearer ${token}` } : {};
 
-    return fetch(`/users/${user_id}/profile/`, {
+    return fetch(this._withNoCache(`/users/${user_id}/profile/`), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -149,9 +152,8 @@ class Api {
   getMyCollectionsProfile() {
     const token = localStorage.getItem("token");
 
-    return fetch("/users/me/collections/", {
+    return fetch(this._withNoCache("/users/me/collections/"), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -163,9 +165,8 @@ class Api {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Bearer ${token}` } : {};
 
-    return fetch(`/users/${user_id}/collections/`, {
+    return fetch(this._withNoCache(`/users/${user_id}/collections/`), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -176,9 +177,8 @@ class Api {
   getMyProfileComments() {
     const token = localStorage.getItem("token");
 
-    return fetch("/users/me/comments/", {
+    return fetch(this._withNoCache("/users/me/comments/"), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -190,9 +190,8 @@ class Api {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Bearer ${token}` } : {};
 
-    return fetch(`/users/${user_id}/comments/`, {
+    return fetch(this._withNoCache(`/users/${user_id}/comments/`), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -625,9 +624,8 @@ class Api {
   getCollections() {
     const token = localStorage.getItem("token");
 
-    return fetch("/collections/", {
+    return fetch(this._withNoCache("/collections/"), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,
@@ -655,9 +653,8 @@ class Api {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Bearer ${token}` } : {};
 
-    return fetch(`/collections/${collection_id}/`, {
+    return fetch(this._withNoCache(`/collections/${collection_id}/`), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -697,9 +694,8 @@ class Api {
     const token = localStorage.getItem("token");
     const authorization = token ? { authorization: `Bearer ${token}` } : {};
 
-    return fetch(`/collections/${collection_id}/recipes/`, {
+    return fetch(this._withNoCache(`/collections/${collection_id}/recipes/`), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         ...authorization,
@@ -734,9 +730,8 @@ class Api {
   getRecipeCollections({ recipe_id }) {
     const token = localStorage.getItem("token");
 
-    return fetch(`/recipes/${recipe_id}/collections/`, {
+    return fetch(this._withNoCache(`/recipes/${recipe_id}/collections/`), {
       method: "GET",
-      cache: "no-store",
       headers: {
         ...this._headers,
         authorization: `Bearer ${token}`,

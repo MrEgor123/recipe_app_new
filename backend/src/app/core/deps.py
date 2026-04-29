@@ -28,6 +28,21 @@ async def _get_user_from_token(token: str, session: AsyncSession):
     return user
 
 
+def _extract_token_from_authorization_header(raw: str | None) -> str | None:
+    if not raw:
+        return None
+
+    parts = raw.split(" ", 1)
+    if len(parts) != 2:
+        return None
+
+    scheme, token = parts[0].strip(), parts[1].strip()
+    if scheme.lower() in {"bearer", "token"} and token:
+        return token
+
+    return None
+
+
 async def get_current_user(
     creds: HTTPAuthorizationCredentials = Depends(security_required),
     session: AsyncSession = Depends(get_db_session),
@@ -35,17 +50,17 @@ async def get_current_user(
     return await _get_user_from_token(creds.credentials, session)
 
 
-def _extract_token_from_authorization_header(raw: str | None) -> str | None:
-    """Accepts both 'Bearer <jwt>' and 'Token <jwt>' (Foodgram frontend)."""
-    if not raw:
+async def get_optional_user(
+    creds: HTTPAuthorizationCredentials | None = Depends(security_optional),
+    session: AsyncSession = Depends(get_db_session),
+):
+    if creds is None:
         return None
-    parts = raw.split(" ", 1)
-    if len(parts) != 2:
+
+    try:
+        return await _get_user_from_token(creds.credentials, session)
+    except HTTPException:
         return None
-    scheme, token = parts[0].strip(), parts[1].strip()
-    if scheme.lower() in {"bearer", "token"} and token:
-        return token
-    return None
 
 
 async def get_current_user_token(
@@ -57,6 +72,7 @@ async def get_current_user_token(
     )
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
     return await _get_user_from_token(token, session)
 
 
@@ -72,19 +88,6 @@ async def get_optional_user_token(
 
     try:
         return await _get_user_from_token(token, session)
-    except HTTPException:
-        return None
-
-
-async def get_optional_user(
-    creds: HTTPAuthorizationCredentials | None = Depends(security_optional),
-    session: AsyncSession = Depends(get_db_session),
-):
-    if creds is None:
-        return None
-
-    try:
-        return await _get_user_from_token(creds.credentials, session)
     except HTTPException:
         return None
 

@@ -78,6 +78,107 @@ class Api {
     }).then(this.checkResponse);
   }
 
+  getMyProfile() {
+    const token = localStorage.getItem("token");
+
+    return fetch("/users/me/profile/", {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getProfile({ user_id }) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Bearer ${token}` } : {};
+
+    return fetch(`/users/${user_id}/profile/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  updateMyProfile({ status, bio, cover_image }) {
+    const token = localStorage.getItem("token");
+    const payload = {};
+
+    if (status !== undefined) {
+      payload.status = status;
+    }
+
+    if (bio !== undefined) {
+      payload.bio = bio;
+    }
+
+    if (cover_image !== undefined) {
+      payload.cover_image = cover_image;
+    }
+
+    return fetch("/users/me/profile/", {
+      method: "PATCH",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    }).then(this.checkResponse);
+  }
+
+  getMyCollectionsProfile() {
+    const token = localStorage.getItem("token");
+
+    return fetch("/users/me/collections/", {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getUserCollections({ user_id }) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Bearer ${token}` } : {};
+
+    return fetch(`/users/${user_id}/collections/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getMyProfileComments() {
+    const token = localStorage.getItem("token");
+
+    return fetch("/users/me/comments/", {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getUserProfileComments({ user_id }) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Bearer ${token}` } : {};
+
+    return fetch(`/users/${user_id}/comments/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
   changePassword({ current_password, new_password }) {
     const token = localStorage.getItem("token");
     return fetch("/api/users/set_password/", {
@@ -494,6 +595,139 @@ class Api {
         ...this._headers,
         authorization: `Token ${token}`,
       },
+    }).then(this.checkResponse);
+  }
+
+  getCollections() {
+    const token = localStorage.getItem("token");
+
+    return fetch("/collections/", {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  createCollection({ name, description = "" }) {
+    const token = localStorage.getItem("token");
+
+    return fetch("/collections/", {
+      method: "POST",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name,
+        description: description || null,
+      }),
+    }).then(this.checkResponse);
+  }
+
+  getCollection({ collection_id }) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Bearer ${token}` } : {};
+
+    return fetch(`/collections/${collection_id}/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  updateCollection({ collection_id, name, description = "" }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/collections/${collection_id}/`, {
+      method: "PATCH",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name,
+        description: description || null,
+      }),
+    }).then(this.checkResponse);
+  }
+
+  deleteCollection({ collection_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/collections/${collection_id}/`, {
+      method: "DELETE",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getCollectionRecipes({ collection_id }) {
+    const token = localStorage.getItem("token");
+    const authorization = token ? { authorization: `Bearer ${token}` } : {};
+
+    return fetch(`/collections/${collection_id}/recipes/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        ...authorization,
+      },
+    }).then(this.checkResponse);
+  }
+
+  addRecipeToCollection({ collection_id, recipe_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/collections/${collection_id}/recipes/${recipe_id}/`, {
+      method: "POST",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  removeRecipeFromCollection({ collection_id, recipe_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/collections/${collection_id}/recipes/${recipe_id}/`, {
+      method: "DELETE",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  getRecipeCollections({ recipe_id }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/recipes/${recipe_id}/collections/`, {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then(this.checkResponse);
+  }
+
+  updateRecipeCollections({ recipe_id, collection_ids = [] }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/recipes/${recipe_id}/collections/`, {
+      method: "PUT",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        collection_ids,
+      }),
     }).then(this.checkResponse);
   }
 }

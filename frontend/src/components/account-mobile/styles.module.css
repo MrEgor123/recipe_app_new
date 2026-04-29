@@ -1,96 +1,166 @@
-.account {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: left;
-  border: 1.5px solid #efefef;
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px 0;
-  max-width: 308px;
-  min-width: 280px;
-  width: 100%;
+.account{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:left;
+  border:1.5px solid #efefef;
+  background:#fff;
+  border-radius:18px;
+  padding:24px 0;
+  max-width:308px;
+  min-width:280px;
+  width:100%;
 }
 
-.accountProfile {
-  display: flex;
-  align-items: center;
-  margin-bottom: 24px;
+.accountProfileWrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:24px;
+  padding:0 16px;
+  width:100%;
+  box-sizing:border-box;
 }
 
-.accountAvatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 100%;
-  overflow: hidden;
-  margin-right: 14px;
-  background-image: url("../../images/userpic-icon.jpg");
-  background-size: cover;
-  background-repeat: no-repeat;
-  cursor: pointer;
+.accountProfileLink{
+  text-decoration:none;
+  color:inherit;
+  flex:1;
 }
 
-.accountName {
-  color: #000;
-  font-size: 16px;
-  line-height: 120%;
+.accountProfile{
+  display:flex;
+  align-items:center;
 }
 
-.accountEmail {
-  color: #a0a0a0;
-  font-size: 16px;
-  line-height: 120%;
+.accountProfileLink:hover .accountName{
+  color:var(--accent);
 }
 
-.accountLinks {
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
+.accountAvatar{
+  width:52px;
+  height:52px;
+  border-radius:100%;
+  overflow:hidden;
+  margin-right:14px;
+  background-image:url("../../images/userpic-icon.jpg");
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-position:center;
+  cursor:pointer;
+  flex-shrink:0;
 }
 
-.accountLinkItem {
-  margin-bottom: 8px;
-  height: 40px;
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-  cursor: pointer;
+.accountAvatarEditBtn{
+  width:36px;
+  height:36px;
+  min-width:36px;
+  border:none;
+  border-radius:999px;
+  background:var(--surface-2);
+  color:var(--text);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background .15s, transform .05s;
 }
 
-.accountLinkIcon {
-  width: 22px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-shrink: 0;
+.accountAvatarEditBtn:hover{
+  background:var(--surface);
 }
 
-.accountLink {
-  color: #000;
+.accountAvatarEditBtn:active{
+  transform:translateY(1px);
 }
 
-.accountLinkTitle {
-  display: flex;
-  align-items: center;
+.accountAvatarEditBtn svg{
+  width:15px;
+  height:15px;
 }
 
-@media screen and (max-width: 610px) {
-  .accountProfile {
-    flex-direction: column;
-    text-align: center;
+.accountName{
+  color:#000;
+  font-size:16px;
+  line-height:120%;
+  font-weight:700;
+  transition:color .15s;
+}
+
+.accountEmail{
+  color:#a0a0a0;
+  font-size:16px;
+  line-height:120%;
+}
+
+.accountControls{
+  width:100%;
+}
+
+.accountLinks{
+  flex-direction:column;
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:flex;
+  width:100%;
+}
+
+.accountLinkItem{
+  margin-bottom:8px;
+  min-height:40px;
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  cursor:pointer;
+  width:100%;
+  box-sizing:border-box;
+}
+
+.accountLinkIcon{
+  width:22px;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  flex-shrink:0;
+}
+
+.accountLink{
+  color:#000;
+  width:100%;
+}
+
+.accountLinkTitle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+@media screen and (max-width: 610px){
+  .accountProfile{
+    flex-direction:column;
+    text-align:center;
   }
 
-  .accountAvatar {
-    margin: 0 0 14px;
+  .accountAvatar{
+    margin:0 0 14px;
   }
 
-  .account {
-    margin-bottom: 20px;
+  .accountProfileWrap{
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+
+  .accountProfileLink{
+    width:100%;
+  }
+
+  .account{
+    margin-bottom:20px;
   }
 }

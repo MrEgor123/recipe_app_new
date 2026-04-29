@@ -8,6 +8,9 @@ import Favorites from "./favorites";
 import Subscriptions from "./subscriptions";
 import RecipeCreate from "./recipe-create";
 import User from "./user";
+import ProfilePage from "./profile";
+import ProfileEditPage from "./profile-edit";
+import CollectionDetailPage from "./collection-detail";
 import ChangePassword from "./change-password";
 import About from "./about";
 import Technologies from "./technologies";
@@ -29,6 +32,9 @@ export {
   Subscriptions,
   RecipeCreate,
   User,
+  ProfilePage,
+  ProfileEditPage,
+  CollectionDetailPage,
   ChangePassword,
   UpdateAvatar,
   NotFound,

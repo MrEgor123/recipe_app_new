@@ -122,7 +122,10 @@ const SingleCard = ({ updateOrders }) => {
   const [loading, setLoading] = useState(true);
   const [servings, setServings] = useState(1);
 
-  const [notificationPosition, setNotificationPosition] = useState("-100%");
+  const [notification, setNotification] = useState({
+    text: "",
+    position: "-100%",
+  });
   const [notificationError, setNotificationError] = useState({
     text: "",
     position: "-100%",
@@ -142,6 +145,14 @@ const SingleCard = ({ updateOrders }) => {
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [collectionsSaving, setCollectionsSaving] = useState(false);
+  const [collections, setCollections] = useState([]);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState([]);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionSubmitting, setNewCollectionSubmitting] = useState(false);
+
   const { recipe, setRecipe, handleLike, handleAddToCart, handleSubscribe } =
     useRecipe();
 
@@ -150,6 +161,20 @@ const SingleCard = ({ updateOrders }) => {
   const { id } = useParams();
   const history = useHistory();
   const { url } = useRouteMatch();
+
+  const showNotification = (text) => {
+    setNotification({
+      text,
+      position: "40px",
+    });
+
+    setTimeout(() => {
+      setNotification((prev) => ({
+        ...prev,
+        position: "-100%",
+      }));
+    }, 3000);
+  };
 
   const sortReplies = (items = []) => {
     return [...items].sort((a, b) => {
@@ -230,6 +255,102 @@ const SingleCard = ({ updateOrders }) => {
       });
   };
 
+  const loadCollectionsModalData = () => {
+    if (!authContext) return;
+
+    setCollectionsLoading(true);
+
+    Promise.all([api.getCollections(), api.getRecipeCollections({ recipe_id: id })])
+      .then(([collectionsData, recipeCollectionsData]) => {
+        setCollections(Array.isArray(collectionsData) ? collectionsData : []);
+        setSelectedCollectionIds(
+          Array.isArray(recipeCollectionsData.collection_ids)
+            ? recipeCollectionsData.collection_ids
+            : []
+        );
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: "Не удалось загрузить подборки",
+          position: "40px",
+        });
+      })
+      .finally(() => setCollectionsLoading(false));
+  };
+
+  const openCollectionsModal = () => {
+    setCollectionsOpen(true);
+    setNewCollectionName("");
+    loadCollectionsModalData();
+  };
+
+  const closeCollectionsModal = () => {
+    if (collectionsSaving || newCollectionSubmitting) return;
+    setCollectionsOpen(false);
+    setNewCollectionName("");
+  };
+
+  const toggleCollectionSelection = (collectionId) => {
+    setSelectedCollectionIds((prev) =>
+      prev.includes(collectionId)
+        ? prev.filter((itemId) => itemId !== collectionId)
+        : [...prev, collectionId]
+    );
+  };
+
+  const handleSaveCollections = () => {
+    if (!authContext || collectionsSaving) return;
+
+    setCollectionsSaving(true);
+
+    api
+      .updateRecipeCollections({
+        recipe_id: id,
+        collection_ids: selectedCollectionIds,
+      })
+      .then((res) => {
+        setSelectedCollectionIds(res.collection_ids || []);
+        setCollectionsOpen(false);
+        showNotification("Подборки сохранены");
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: err?.detail || "Не удалось сохранить подборки",
+          position: "40px",
+        });
+      })
+      .finally(() => setCollectionsSaving(false));
+  };
+
+  const handleCreateCollection = () => {
+    const name = newCollectionName.trim();
+    if (!name || newCollectionSubmitting) return;
+
+    setNewCollectionSubmitting(true);
+
+    api
+      .createCollection({ name })
+      .then((createdCollection) => {
+        setCollections((prev) => [createdCollection, ...prev]);
+        setSelectedCollectionIds((prev) =>
+          prev.includes(createdCollection.id)
+            ? prev
+            : [...prev, createdCollection.id]
+        );
+        setNewCollectionName("");
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: err?.detail || "Не удалось создать подборку",
+          position: "40px",
+        });
+      })
+      .finally(() => setNewCollectionSubmitting(false));
+  };
+
   const replaceCommentInTree = (items, commentId, updater) =>
     items.map((item) => {
       if (item.id === commentId) {
@@ -276,10 +397,7 @@ const SingleCard = ({ updateOrders }) => {
         navigator.clipboard
           .writeText(shortLink)
           .then(() => {
-            setNotificationPosition("40px");
-            setTimeout(() => {
-              setNotificationPosition("-100%");
-            }, 3000);
+            showNotification("Ссылка скопирована");
           })
           .catch(() => {
             setNotificationError({
@@ -550,7 +668,7 @@ const SingleCard = ({ updateOrders }) => {
       >
         <div className={styles.commentTop}>
           <Link
-            to={`/user/${authorId}`}
+            to={`/users/${authorId}`}
             className={styles.commentAvatarLink}
             aria-label={`Открыть профиль ${authorName}`}
           >
@@ -563,7 +681,7 @@ const SingleCard = ({ updateOrders }) => {
           </Link>
 
           <div className={styles.commentMeta}>
-            <Link to={`/user/${authorId}`} className={styles.commentAuthorLink}>
+            <Link to={`/users/${authorId}`} className={styles.commentAuthorLink}>
               {authorName}
             </Link>
             <div className={styles.commentDate}>
@@ -799,7 +917,7 @@ const SingleCard = ({ updateOrders }) => {
                   />
                   <LinkComponent
                     title={`${author.first_name} ${author.last_name}`}
-                    href={`/user/${author.id}`}
+                    href={`/users/${author.id}`}
                     className={styles.authorLink}
                   />
                 </div>
@@ -906,6 +1024,16 @@ const SingleCard = ({ updateOrders }) => {
                         Добавить в покупки
                       </>
                     )}
+                  </Button>
+                )}
+
+                {authContext && (
+                  <Button
+                    className={styles.editBtn}
+                    modifier="style_light"
+                    clickHandler={openCollectionsModal}
+                  >
+                    В подборки
                   </Button>
                 )}
 
@@ -1061,9 +1189,94 @@ const SingleCard = ({ updateOrders }) => {
           </div>
         </div>
 
+        {collectionsOpen && (
+          <div className={styles.collectionsModalOverlay} onClick={closeCollectionsModal}>
+            <div
+              className={styles.collectionsModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.collectionsModalHeader}>
+                <h3 className={styles.collectionsModalTitle}>Подборки</h3>
+                <button
+                  type="button"
+                  className={styles.collectionsModalClose}
+                  onClick={closeCollectionsModal}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.collectionsModalBody}>
+                <div className={styles.collectionsCreateRow}>
+                  <input
+                    type="text"
+                    className={styles.collectionsInput}
+                    placeholder="Новая подборка"
+                    value={newCollectionName}
+                    onChange={(e) => setNewCollectionName(e.target.value)}
+                    maxLength={100}
+                  />
+                  <Button
+                    className={styles.collectionsCreateBtn}
+                    modifier="style_dark"
+                    clickHandler={handleCreateCollection}
+                    disabled={!newCollectionName.trim() || newCollectionSubmitting}
+                  >
+                    {newCollectionSubmitting ? "Создание..." : "Создать"}
+                  </Button>
+                </div>
+
+                {collectionsLoading ? (
+                  <div className={styles.collectionsEmpty}>Загрузка подборок...</div>
+                ) : collections.length ? (
+                  <div className={styles.collectionsList}>
+                    {collections.map((collection) => (
+                      <label key={collection.id} className={styles.collectionsItem}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCollectionIds.includes(collection.id)}
+                          onChange={() => toggleCollectionSelection(collection.id)}
+                        />
+                        <span className={styles.collectionsItemName}>
+                          {collection.name}
+                        </span>
+                        <span className={styles.collectionsItemCount}>
+                          {collection.recipes_count || 0}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.collectionsEmpty}>
+                    У вас пока нет подборок
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.collectionsModalFooter}>
+                <button
+                  type="button"
+                  className={styles.collectionsCancelBtn}
+                  onClick={closeCollectionsModal}
+                >
+                  Отмена
+                </button>
+                <Button
+                  className={styles.collectionsSaveBtn}
+                  modifier="style_dark"
+                  clickHandler={handleSaveCollections}
+                  disabled={collectionsSaving}
+                >
+                  {collectionsSaving ? "Сохранение..." : "Сохранить"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Notification
-          text="Ссылка скопирована"
-          style={{ right: notificationPosition }}
+          text={notification.text}
+          style={{ right: notification.position }}
         />
         <Notification
           text={notificationError.text}

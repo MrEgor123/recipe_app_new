@@ -1,10 +1,10 @@
-from collections import defaultdict
-
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.comment import Comment
 from app.models.comment_like import CommentLike
+from app.models.recipe import Recipe
+from app.models.user import User
 
 
 class CommentRepository:
@@ -58,6 +58,75 @@ class CommentRepository:
                     "is_liked": comment.id in liked_ids,
                 }
             )
+        return result
+
+    async def list_by_user(
+        self,
+        session: AsyncSession,
+        user_id: int,
+        current_user_id: int | None = None,
+    ) -> list[dict]:
+        likes_subq = (
+            select(
+                CommentLike.comment_id.label("comment_id"),
+                func.count(CommentLike.id).label("likes_count"),
+            )
+            .group_by(CommentLike.comment_id)
+            .subquery()
+        )
+
+        stmt = (
+            select(
+                Comment,
+                User,
+                Recipe,
+                func.coalesce(likes_subq.c.likes_count, 0).label("likes_count"),
+            )
+            .join(User, User.id == Comment.author_id)
+            .join(Recipe, Recipe.id == Comment.recipe_id)
+            .outerjoin(likes_subq, likes_subq.c.comment_id == Comment.id)
+            .where(Comment.author_id == user_id)
+            .order_by(Comment.created_at.desc(), Comment.id.desc())
+        )
+
+        rows = (await session.execute(stmt)).all()
+
+        liked_ids: set[int] = set()
+        if current_user_id is not None and rows:
+            comment_ids = [comment.id for comment, _, _, _ in rows]
+            liked_stmt = select(CommentLike.comment_id).where(
+                CommentLike.user_id == current_user_id,
+                CommentLike.comment_id.in_(comment_ids),
+            )
+            liked_ids = set((await session.execute(liked_stmt)).scalars().all())
+
+        result: list[dict] = []
+        for comment, author, recipe, likes_count in rows:
+            recipe_title = getattr(recipe, "title", None) or getattr(recipe, "name", None)
+
+            result.append(
+                {
+                    "id": comment.id,
+                    "text": comment.text,
+                    "created_at": comment.created_at,
+                    "parent_id": comment.parent_id,
+                    "likes_count": int(likes_count or 0),
+                    "is_liked": comment.id in liked_ids,
+                    "author": {
+                        "id": author.id,
+                        "username": author.username,
+                        "first_name": author.first_name,
+                        "last_name": author.last_name,
+                        "avatar": author.avatar,
+                    },
+                    "recipe": {
+                        "id": recipe.id,
+                        "title": recipe_title,
+                        "image": getattr(recipe, "image", None),
+                    },
+                }
+            )
+
         return result
 
     async def get(self, session: AsyncSession, comment_id: int) -> Comment | None:

@@ -16,11 +16,13 @@ import {
   SignUp,
   RecipeEdit,
   RecipeCreate,
-  User,
   ChangePassword,
   NotFound,
   UpdateAvatar,
   ResetPassword,
+  ProfilePage,
+  ProfileEditPage,
+  CollectionDetailPage,
 } from "./pages";
 
 import { AuthContext, UserContext } from "./contexts";
@@ -134,8 +136,8 @@ function App() {
           localStorage.setItem("token", res.auth_token);
           api
             .getUserData()
-            .then((res) => {
-              setUser(res);
+            .then((userRes) => {
+              setUser(userRes);
               setLoggedIn(true);
               getOrders();
             })
@@ -172,7 +174,7 @@ function App() {
       });
   };
 
-  const loadSingleItem = ({ id, callback }) => {
+  const loadSingleItem = ({ callback }) => {
     setTimeout(() => {
       callback();
     }, 3000);
@@ -222,10 +224,10 @@ function App() {
           setLoggedIn(false);
           history.push("/recipes");
         });
-    } else {
-      setLoggedIn(false);
     }
-  }, []);
+
+    setLoggedIn(false);
+  }, [history]);
 
   if (loggedIn === null) {
     return <div className={styles.loading}>Загрузка...</div>;
@@ -236,13 +238,34 @@ function App() {
       <UserContext.Provider value={user}>
         <div className="App">
           <Header orders={orders} loggedIn={loggedIn} onSignOut={onSignOut} />
+
           <Switch>
-            <Route
+            <ProtectedRoute
               exact
-              path="/user/:id"
-              component={User}
-              updateOrders={updateOrders}
+              path="/profile"
+              component={() => <ProfilePage isMe />}
+              loggedIn={loggedIn}
             />
+
+            <ProtectedRoute
+              exact
+              path="/profile/edit"
+              component={ProfileEditPage}
+              loggedIn={loggedIn}
+            />
+
+            <Route exact path="/users/:id">
+              <ProfilePage />
+            </Route>
+
+            <Route exact path="/collection/:id">
+              <CollectionDetailPage />
+            </Route>
+
+            <Route exact path="/collections/:id">
+              <CollectionDetailPage />
+            </Route>
+
             <ProtectedRoute
               exact
               path="/cart"
@@ -251,6 +274,7 @@ function App() {
               loggedIn={loggedIn}
               updateOrders={updateOrders}
             />
+
             <ProtectedRoute
               exact
               path="/subscriptions"
@@ -281,6 +305,7 @@ function App() {
               loadItem={loadSingleItem}
               onItemDelete={getOrders}
             />
+
             <ProtectedRoute
               exact
               path="/change-password"
@@ -347,6 +372,7 @@ function App() {
               <NotFound />
             </Route>
           </Switch>
+
           <Footer />
         </div>
       </UserContext.Provider>

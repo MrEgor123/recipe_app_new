@@ -1,5 +1,5 @@
 import styles from "./styles.module.css";
-import { useContext, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { LinkComponent } from "../index.js";
 import { AuthContext, UserContext } from "../../contexts";
 import { UserMenu } from "../../configs/navigation";
@@ -9,23 +9,43 @@ import { AvatarPopup } from "../avatar-popup";
 import api from "../../api";
 
 const AccountData = ({ userContext, setIsChangeAvatarOpen }) => {
+  const fullName =
+    `${userContext.first_name || ""} ${userContext.last_name || ""}`.trim() ||
+    userContext.username ||
+    "Пользователь";
+
   return (
-    <div className={styles.accountProfile}>
-      <div
-        className={styles.accountAvatar}
-        style={{
-          "background-image": `url(${userContext.avatar || DefaultImage})`,
-        }}
+    <div className={styles.accountProfileWrap}>
+      <LinkComponent
+        href="/profile"
+        className={styles.accountProfileLink}
+        title={
+          <div className={styles.accountProfile}>
+            <div
+              className={styles.accountAvatar}
+              style={{
+                backgroundImage: `url(${userContext.avatar || DefaultImage})`,
+              }}
+            />
+            <div className={styles.accountData}>
+              <div className={styles.accountName}>{fullName}</div>
+              <div className={styles.accountEmail}>{userContext.email}</div>
+            </div>
+          </div>
+        }
+      />
+
+      <button
+        type="button"
+        className={styles.accountAvatarEditBtn}
         onClick={() => {
           setIsChangeAvatarOpen(true);
         }}
-      />
-      <div className={styles.accountData}>
-        <div className={styles.accountName}>
-          {userContext.first_name} {userContext.last_name}
-        </div>
-        <div className={styles.accountEmail}>{userContext.email}</div>
-      </div>
+        aria-label="Изменить аватар"
+        title="Изменить аватар"
+      >
+        <Icons.AddAvatarIcon />
+      </button>
     </div>
   );
 };
@@ -35,6 +55,17 @@ const AccountMobile = ({ onSignOut }) => {
   const userContext = useContext(UserContext);
   const [isChangeAvatarOpen, setIsChangeAvatarOpen] = useState(false);
   const [newAvatar, setNewAvatar] = useState("");
+
+  const menuItems = useMemo(() => {
+    return [
+      {
+        href: "/profile",
+        title: "Мой профиль",
+        icon: <Icons.UserIcon />,
+      },
+      ...UserMenu,
+    ];
+  }, []);
 
   const handleSaveAvatar = () => {
     if (newAvatar) {
@@ -66,11 +97,12 @@ const AccountMobile = ({ onSignOut }) => {
         userContext={userContext}
         setIsChangeAvatarOpen={setIsChangeAvatarOpen}
       />
+
       <div className={styles.accountControls}>
         <ul className={styles.accountLinks}>
-          {UserMenu.map((menuItem) => {
+          {menuItems.map((menuItem) => {
             return (
-              <li className={styles.accountLinkItem}>
+              <li key={menuItem.href} className={styles.accountLinkItem}>
                 <LinkComponent
                   className={styles.accountLink}
                   href={menuItem.href}
@@ -86,14 +118,18 @@ const AccountMobile = ({ onSignOut }) => {
               </li>
             );
           })}
+
           <li className={styles.accountLinkItem} onClick={onSignOut}>
-            <div className={styles.accountLinkIcon}>
-              <Icons.LogoutMenu />
+            <div className={styles.accountLinkTitle}>
+              <div className={styles.accountLinkIcon}>
+                <Icons.LogoutMenu />
+              </div>
+              Выйти
             </div>
-            Выйти
           </li>
         </ul>
       </div>
+
       {isChangeAvatarOpen && (
         <AvatarPopup
           info="test"

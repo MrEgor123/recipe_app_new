@@ -11,6 +11,8 @@ from app.models.shopping_cart import ShoppingCartItem
 from app.models.short_link import ShortLink
 from app.models.recipe_step import RecipeStep
 from app.models.recipe_rating import RecipeRating
+from app.models.collection import Collection
+from app.models.collection_recipe import CollectionRecipe
 
 __all__ = [
     "Base",
@@ -25,5 +27,7 @@ __all__ = [
     "ShoppingCartItem",
     "ShortLink",
     "RecipeStep",
-    "RecipeRating"
+    "RecipeRating",
+    "Collection",
+    "CollectionRecipe"
 ]

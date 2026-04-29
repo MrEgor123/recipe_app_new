@@ -32,6 +32,7 @@ import AccountMobile from './account-mobile'
 import Orders from './orders'
 import NavMenu from './nav-menu'
 import Popup from './popup'
+import CollectionModal from "./collection-modal"
 
 export {
   Popup,
@@ -67,5 +68,6 @@ export {
   Subscription,
   SubscriptionList,
   FileInput,
-  IngredientsSearch
+  IngredientsSearch,
+  CollectionModal
 }

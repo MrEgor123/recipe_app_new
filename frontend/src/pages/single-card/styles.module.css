@@ -898,6 +898,182 @@
   font-size:14px;
 }
 
+/* collections modal */
+
+.collectionsModalOverlay{
+  position:fixed;
+  inset:0;
+  background:rgba(15, 23, 42, 0.38);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  z-index:1200;
+}
+
+.collectionsModal{
+  width:100%;
+  max-width:560px;
+  max-height:80vh;
+  overflow:hidden;
+  border-radius:24px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-sm);
+  display:flex;
+  flex-direction:column;
+}
+
+.collectionsModalHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:22px 22px 16px;
+  border-bottom:1px solid var(--border);
+}
+
+.collectionsModalTitle{
+  margin:0;
+  font-size:24px;
+  font-weight:800;
+  color:var(--text);
+}
+
+.collectionsModalClose{
+  width:36px;
+  height:36px;
+  min-width:36px;
+  border:none;
+  border-radius:999px;
+  background:var(--surface-2);
+  color:var(--text);
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+}
+
+.collectionsModalBody{
+  padding:18px 22px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.collectionsCreateRow{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.collectionsInput{
+  flex:1;
+  min-height:44px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#fff;
+  padding:0 14px;
+  font-size:15px;
+  color:var(--text);
+  outline:none;
+  box-sizing:border-box;
+}
+
+.collectionsInput:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,0,0,.04);
+}
+
+.collectionsCreateBtn{
+  min-height:44px;
+  padding:0 16px;
+  white-space:nowrap;
+}
+
+.collectionsList{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.collectionsItem{
+  display:grid;
+  grid-template-columns:20px minmax(0, 1fr) auto;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--surface-2);
+  cursor:pointer;
+}
+
+.collectionsItem input{
+  margin:0;
+}
+
+.collectionsItemName{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text);
+}
+
+.collectionsItemCount{
+  min-width:28px;
+  height:28px;
+  padding:0 8px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:#fff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+.collectionsEmpty{
+  border:1px dashed var(--border);
+  background:var(--surface-2);
+  color:var(--muted);
+  border-radius:16px;
+  padding:18px;
+  font-size:15px;
+}
+
+.collectionsModalFooter{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  padding:16px 22px 22px;
+  border-top:1px solid var(--border);
+}
+
+.collectionsCancelBtn{
+  min-height:42px;
+  padding:0 16px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+  color:var(--muted);
+  cursor:pointer;
+  font-size:14px;
+  font-weight:600;
+}
+
+.collectionsCancelBtn:hover{
+  background:#fff;
+  border-color:var(--border-strong);
+  color:var(--text);
+}
+
+.collectionsSaveBtn{
+  min-height:42px;
+  padding:0 18px;
+}
+
 @media screen and (max-width: 1180px){
   .heroGrid{
     grid-template-columns:minmax(320px, 420px) minmax(0, 1fr);
@@ -1229,5 +1405,32 @@
 
   .nutritionTitle{
     font-size:20px;
+  }
+
+  .collectionsModal{
+    max-width:none;
+    border-radius:20px;
+  }
+
+  .collectionsModalHeader,
+  .collectionsModalBody,
+  .collectionsModalFooter{
+    padding-left:16px;
+    padding-right:16px;
+  }
+
+  .collectionsCreateRow{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .collectionsCreateBtn,
+  .collectionsSaveBtn,
+  .collectionsCancelBtn{
+    width:100%;
+  }
+
+  .collectionsModalFooter{
+    flex-direction:column;
   }
 }

@@ -31,4 +31,21 @@ class CommentOut(BaseModel):
     replies: list["CommentOut"] = []
 
 
+class ProfileCommentRecipeOut(BaseModel):
+    id: int
+    title: str | None = None
+    image: str | None = None
+
+
+class ProfileCommentOut(BaseModel):
+    id: int
+    text: str
+    created_at: datetime
+    parent_id: int | None = None
+    likes_count: int = 0
+    is_liked: bool = False
+    author: CommentAuthorOut
+    recipe: ProfileCommentRecipeOut
+
+
 CommentOut.model_rebuild()

@@ -1,0 +1,310 @@
+.page{
+  padding:22px 0 40px;
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+.card,
+.contentCard,
+.emptyCard{
+  border:1px solid var(--border);
+  border-radius:28px;
+  background:var(--surface);
+  box-shadow:var(--shadow-sm);
+}
+
+.card,
+.contentCard{
+  padding:28px;
+}
+
+.emptyCard{
+  padding:36px 28px;
+  text-align:center;
+}
+
+.emptyTitle{
+  margin:0 0 10px;
+  font-size:34px;
+  line-height:1.1;
+  font-weight:800;
+  color:var(--text);
+}
+
+.emptyText{
+  margin:0 0 20px;
+  font-size:15px;
+  line-height:1.6;
+  color:var(--muted);
+}
+
+.backBtn{
+  min-height:46px;
+  padding:0 18px;
+  border-radius:16px;
+}
+
+.header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+}
+
+.title{
+  margin:0 0 10px;
+  font-size:36px;
+  line-height:1.08;
+  font-weight:800;
+  color:var(--text);
+}
+
+.meta{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+  color:var(--muted);
+}
+
+.dot{
+  width:4px;
+  height:4px;
+  border-radius:50%;
+  background:var(--muted);
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.actionBtn{
+  min-height:44px;
+  padding:0 16px;
+  border-radius:16px;
+}
+
+.deleteBtn{
+  min-height:44px;
+  padding:0 16px;
+  border-radius:16px;
+  border-color:#fecaca !important;
+  color:#b91c1c !important;
+}
+
+.deleteBtn:hover{
+  background:#fef2f2 !important;
+}
+
+.description{
+  margin-top:18px;
+  font-size:15px;
+  line-height:1.7;
+  color:var(--text);
+}
+
+.sectionHeader{
+  margin-bottom:18px;
+}
+
+.sectionTitle{
+  margin:0;
+  font-size:32px;
+  line-height:1.1;
+  font-weight:800;
+  color:var(--text);
+}
+
+.recipeGrid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:18px;
+}
+
+.recipeCard{
+  display:flex;
+  flex-direction:column;
+  border:1px solid var(--border);
+  border-radius:22px;
+  background:var(--surface);
+  overflow:hidden;
+  transition:transform .08s, box-shadow .15s, border-color .15s;
+}
+
+.recipeCard:hover{
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-sm);
+  border-color:var(--border-strong);
+}
+
+.recipeCardLink{
+  display:flex;
+  flex-direction:column;
+  text-decoration:none;
+  color:inherit;
+}
+
+.recipeImageWrap{
+  width:100%;
+  aspect-ratio:16 / 10;
+  background:var(--surface-2);
+  overflow:hidden;
+}
+
+.recipeImage{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.recipeImagePlaceholder{
+  width:100%;
+  height:100%;
+  background:
+    linear-gradient(135deg, rgba(0,0,0,.03), rgba(0,0,0,.015)),
+    radial-gradient(circle at top left, rgba(0,0,0,.04), transparent 45%);
+}
+
+.recipeCardBody{
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.recipeTitle{
+  margin:0;
+  font-size:18px;
+  line-height:1.3;
+  font-weight:800;
+  color:var(--text);
+}
+
+.recipeMeta{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+}
+
+.recipeMetaItem{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:14px;
+  color:var(--text);
+}
+
+.recipeMetaItem svg{
+  width:14px;
+  height:14px;
+}
+
+.recipeMetaMuted{
+  font-size:13px;
+  color:var(--muted);
+}
+
+.recipeStar{
+  color:#f5b301;
+  line-height:1;
+}
+
+.recipeCardFooter{
+  padding:0 16px 16px;
+}
+
+.removeRecipeBtn{
+  width:100%;
+  min-height:42px;
+  padding:0 16px;
+  border-radius:16px;
+}
+
+.emptyRecipes{
+  font-size:15px;
+  color:var(--muted);
+}
+
+@media screen and (max-width: 1180px){
+  .recipeGrid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 768px){
+  .card,
+  .contentCard{
+    padding:20px;
+    border-radius:22px;
+  }
+
+  .title{
+    font-size:30px;
+  }
+
+  .sectionTitle{
+    font-size:28px;
+  }
+
+  .header{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .actions{
+    width:100%;
+  }
+
+  .actionBtn,
+  .deleteBtn{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+@media screen and (max-width: 640px){
+  .page{
+    padding:16px 0 28px;
+  }
+
+  .card,
+  .contentCard,
+  .emptyCard{
+    padding:18px;
+    border-radius:20px;
+  }
+
+  .title{
+    font-size:26px;
+  }
+
+  .sectionTitle{
+    font-size:24px;
+  }
+
+  .recipeGrid{
+    grid-template-columns:1fr;
+  }
+
+  .recipeCard{
+    border-radius:18px;
+  }
+
+  .recipeCardBody{
+    padding:14px;
+  }
+
+  .recipeCardFooter{
+    padding:0 14px 14px;
+  }
+
+  .recipeTitle{
+    font-size:16px;
+  }
+}

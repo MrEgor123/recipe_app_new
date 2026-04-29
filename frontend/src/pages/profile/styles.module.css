@@ -48,6 +48,36 @@
   justify-content:center;
 }
 
+.avatarButton{
+  padding:0;
+  margin:0;
+  border:none;
+  background:transparent;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  cursor:default;
+}
+
+.avatarButtonEditable{
+  cursor:pointer;
+}
+
+.avatarButtonEditable:hover .avatar{
+  transform:translateY(-1px);
+  box-shadow:0 12px 28px rgba(15,23,42,.12);
+  border-color:var(--border-strong);
+}
+
+.avatarButtonEditable:active .avatar{
+  transform:translateY(0);
+}
+
+.avatarButtonLoading{
+  pointer-events:none;
+}
+
 .avatar{
   width:132px;
   height:132px;
@@ -58,6 +88,18 @@
   border:1px solid var(--border);
   background-color:var(--surface-2);
   box-shadow:var(--shadow-sm);
+  transition:transform .12s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.avatarHint{
+  font-size:13px;
+  line-height:1.2;
+  font-weight:700;
+  color:var(--accent);
+}
+
+.hiddenInput{
+  display:none;
 }
 
 .profileMain{

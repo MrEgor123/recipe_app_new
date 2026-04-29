@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useHistory, useParams } from "react-router-dom";
 import MetaTags from "react-meta-tags";
 import cn from "classnames";
@@ -57,12 +57,14 @@ const formatCommentDate = (value) => {
 const ProfilePage = ({ isMe = false }) => {
   const history = useHistory();
   const { id } = useParams();
+  const avatarInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [collectionSaving, setCollectionSaving] = useState(false);
   const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [profile, setProfile] = useState(null);
   const [collections, setCollections] = useState([]);
   const [comments, setComments] = useState([]);
@@ -148,6 +150,67 @@ const ProfilePage = ({ isMe = false }) => {
 
   const handleErrorClose = () => {
     setNotificationError((prev) => ({ ...prev, position: "-100%" }));
+  };
+
+  const openAvatarPicker = () => {
+    if (!profile?.is_owner || avatarUploading) return;
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setNotificationError({
+        text: "Нужно выбрать изображение",
+        position: "40px",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const result = reader.result;
+
+      if (typeof result !== "string") {
+        setNotificationError({
+          text: "Не удалось обработать изображение",
+          position: "40px",
+        });
+        event.target.value = "";
+        return;
+      }
+
+      setAvatarUploading(true);
+
+      api
+        .changeAvatar({ file: result })
+        .then((res) => {
+          setProfile((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  avatar: res.avatar || prev.avatar,
+                }
+              : prev
+          );
+          event.target.value = "";
+        })
+        .catch((err) => {
+          console.log(err);
+          setNotificationError({
+            text: "Не удалось обновить аватар",
+            position: "40px",
+          });
+          event.target.value = "";
+        })
+        .finally(() => setAvatarUploading(false));
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const openCreateCollectionModal = () => {
@@ -332,12 +395,38 @@ const ProfilePage = ({ isMe = false }) => {
           <div className={styles.profileCard}>
             <div className={styles.profileTop}>
               <div className={styles.avatarWrap}>
-                <div
-                  className={styles.avatar}
-                  style={{
-                    backgroundImage: `url(${avatar || DefaultImage})`,
-                  }}
-                />
+                <button
+                  type="button"
+                  className={cn(styles.avatarButton, {
+                    [styles.avatarButtonEditable]: is_owner,
+                    [styles.avatarButtonLoading]: avatarUploading,
+                  })}
+                  onClick={openAvatarPicker}
+                  disabled={!is_owner || avatarUploading}
+                  title={is_owner ? "Нажмите, чтобы изменить аватар" : undefined}
+                >
+                  <div
+                    className={styles.avatar}
+                    style={{
+                      backgroundImage: `url(${avatar || DefaultImage})`,
+                    }}
+                  />
+                  {is_owner && (
+                    <span className={styles.avatarHint}>
+                      {avatarUploading ? "Загрузка..." : "Изменить"}
+                    </span>
+                  )}
+                </button>
+
+                {is_owner && (
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    className={styles.hiddenInput}
+                    onChange={handleAvatarChange}
+                  />
+                )}
               </div>
 
               <div className={styles.profileMain}>

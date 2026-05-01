@@ -8,13 +8,14 @@ const Button = ({
   clickHandler,
   className,
   disabled,
-  type,
+  type = "button",
   ...rest
 }) => {
   const classNames = cn(styles.button, className, {
     [styles[`button_${modifier}`]]: modifier,
     [styles.button_disabled]: disabled,
   });
+
   if (href) {
     return (
       <a className={classNames} href={href}>
@@ -22,12 +23,13 @@ const Button = ({
       </a>
     );
   }
+
   return (
     <button
-      type={type || "button"}
+      type={type}
       className={classNames}
       disabled={disabled}
-      onClick={(_) => clickHandler && clickHandler()}
+      onClick={type === "button" ? () => clickHandler && clickHandler() : undefined}
       {...rest}
     >
       {children}

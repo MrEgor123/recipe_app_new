@@ -21,6 +21,14 @@ const Footer = () => {
             <a className={styles.link} href="/favorites">избранное</a>
             <a className={styles.link} href="/cart">покупки</a>
             <a className={styles.link} href="/subscriptions">подписки</a>
+            <a
+              className={`${styles.link} ${styles.supportLink}`}
+              href="https://t.me/MrEgorAP"
+              target="_blank"
+              rel="noreferrer"
+            >
+              поддержка
+            </a>
           </nav>
 
           <div className={styles.meta}>© {new Date().getFullYear()}</div>

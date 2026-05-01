@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -18,7 +19,13 @@ class Settings(BaseSettings):
     jwt_access_minutes: int = 30
     jwt_refresh_days: int = 7
 
-    model_config = SettingsConfigDict(env_prefix="", case_sensitive=False)
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    gemini_api_key: str | None = Field(default=None, alias="GEMINI_API_KEY")
+
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        case_sensitive=False
+    )
 
     @property
     def database_url(self) -> str:

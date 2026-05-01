@@ -42,6 +42,7 @@
 }
 
 .ingredientsNameInput{
+  position:relative;
   margin-bottom:0;
 }
 
@@ -152,7 +153,13 @@
 .ingredientsTimeValue{
   width:64px;
   max-width:64px;
+  height:42px;
+  min-height:42px;
+  padding:0 10px;
   text-align:center;
+  font-size:16px;
+  line-height:42px;
+  border-radius:12px;
 }
 
 .cookingTimeUnit{
@@ -296,7 +303,7 @@
   }
 
   .cookingTime{
-    align-items:flex-end;
+    align-items:center;
     gap:10px;
     margin-bottom:18px;
   }
@@ -308,11 +315,14 @@
   .ingredientsTimeValue{
     width:58px;
     max-width:58px;
+    height:40px;
+    min-height:40px;
+    line-height:40px;
   }
 
   .cookingTimeUnit{
     font-size:14px;
-    margin-bottom:10px;
+    margin-bottom:0;
   }
 
   .fileInput{

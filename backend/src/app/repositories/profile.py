@@ -33,25 +33,46 @@ class ProfileRepository:
 
     async def get_stats(self, session: AsyncSession, user_id: int) -> dict:
         recipes_count = await session.scalar(
-            select(func.count(Recipe.id)).where(Recipe.author_id == user_id)
+            select(func.count(Recipe.id)).where(
+                Recipe.author_id == user_id,
+                Recipe.is_published.is_(True),
+                Recipe.moderation_status == "approved",
+            )
         )
+
         followers_count = await session.scalar(
-            select(func.count(Subscription.id)).where(Subscription.author_id == user_id)
+            select(func.count(Subscription.id)).where(
+                Subscription.author_id == user_id
+            )
         )
+
         following_count = await session.scalar(
-            select(func.count(Subscription.id)).where(Subscription.user_id == user_id)
+            select(func.count(Subscription.id)).where(
+                Subscription.user_id == user_id
+            )
         )
+
         comments_count = await session.scalar(
-            select(func.count(Comment.id)).where(Comment.author_id == user_id)
+            select(func.count(Comment.id)).where(
+                Comment.author_id == user_id
+            )
         )
+
         collections_count = await session.scalar(
-            select(func.count(Collection.id)).where(Collection.user_id == user_id)
+            select(func.count(Collection.id)).where(
+                Collection.user_id == user_id
+            )
         )
+
         total_recipe_likes = await session.scalar(
             select(func.count(Favorite.id))
             .select_from(Favorite)
             .join(Recipe, Recipe.id == Favorite.recipe_id)
-            .where(Recipe.author_id == user_id)
+            .where(
+                Recipe.author_id == user_id,
+                Recipe.is_published.is_(True),
+                Recipe.moderation_status == "approved",
+            )
         )
 
         return {
@@ -74,7 +95,11 @@ class ProfileRepository:
                 func.count(RecipeRating.id).label("rating_count"),
             )
             .outerjoin(RecipeRating, RecipeRating.recipe_id == Recipe.id)
-            .where(Recipe.author_id == user_id)
+            .where(
+                Recipe.author_id == user_id,
+                Recipe.is_published.is_(True),
+                Recipe.moderation_status == "approved",
+            )
             .group_by(
                 Recipe.id,
                 Recipe.title,
@@ -85,6 +110,7 @@ class ProfileRepository:
         )
 
         rows = result.all()
+
         return [
             {
                 "id": row.id,
@@ -109,4 +135,5 @@ class ProfileRepository:
         session.add(user)
         await session.commit()
         await session.refresh(user)
+
         return user

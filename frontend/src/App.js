@@ -6,6 +6,9 @@ import { Header, Footer, ProtectedRoute } from "./components";
 import api from "./api";
 import styles from "./styles.module.css";
 
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 import {
   Main,
   Cart,
@@ -127,10 +130,7 @@ function App() {
 
   const authorization = ({ email, password }) => {
     api
-      .signin({
-        email,
-        password,
-      })
+      .signin({ email, password })
       .then((res) => {
         if (res.auth_token) {
           localStorage.setItem("token", res.auth_token);
@@ -159,9 +159,7 @@ function App() {
 
   const onPasswordReset = ({ email }) => {
     api
-      .resetPassword({
-        email,
-      })
+      .resetPassword({ email })
       .then(() => {
         history.push("/signin");
       })
@@ -183,14 +181,7 @@ function App() {
   const onSignOut = () => {
     api
       .signout()
-      .then(() => {
-        localStorage.removeItem("token");
-        setUser({});
-        setOrders(0);
-        setLoggedIn(false);
-        history.push("/recipes");
-      })
-      .catch(() => {
+      .finally(() => {
         localStorage.removeItem("token");
         setUser({});
         setOrders(0);
@@ -200,14 +191,8 @@ function App() {
   };
 
   const updateOrders = (add) => {
-    if (!add && orders <= 0) {
-      return;
-    }
-    if (add) {
-      setOrders(orders + 1);
-    } else {
-      setOrders(orders - 1);
-    }
+    if (!add && orders <= 0) return;
+    setOrders(add ? orders + 1 : orders - 1);
   };
 
   useEffect(() => {
@@ -225,7 +210,6 @@ function App() {
           history.push("/recipes");
         });
     }
-
     setLoggedIn(false);
   }, [history]);
 
@@ -332,16 +316,8 @@ function App() {
               />
             </Route>
 
-            <Route exact path="/about">
-              <NotFound />
-            </Route>
-
             <Route exact path="/reset-password">
               <ResetPassword onPasswordReset={onPasswordReset} />
-            </Route>
-
-            <Route exact path="/technologies">
-              <NotFound />
             </Route>
 
             <Route exact path="/recipes">
@@ -374,6 +350,13 @@ function App() {
           </Switch>
 
           <Footer />
+
+          {/* ВСПЛЫВАШКИ */}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+          />
         </div>
       </UserContext.Provider>
     </AuthContext.Provider>

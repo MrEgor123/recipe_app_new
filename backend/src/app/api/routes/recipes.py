@@ -115,7 +115,7 @@ async def list_recipes(
     user_opt=Depends(get_optional_user),
 ):
     if (is_favorited or is_in_shopping_cart) and user_opt is None:
-        raise HTTPException(status_code=401, detail="Authentication required for this filter")
+        raise HTTPException(status_code=401)
 
     user_id = user_opt.id if user_opt else None
 
@@ -130,6 +130,7 @@ async def list_recipes(
         is_favorited=is_favorited,
         is_in_shopping_cart=is_in_shopping_cart,
     )
+
     pages = calc_pages(total, size)
 
     recipes = await repo.list_filtered(
@@ -144,6 +145,7 @@ async def list_recipes(
     )
 
     items = [await _to_read(session, r) for r in recipes]
+
     return RecipeListResponse(items=items, page=page, size=size, total=total, pages=pages)
 
 
@@ -156,17 +158,23 @@ async def get_recipe(
     recipe = await repo.get(session, recipe_id)
     if recipe is None:
         raise not_found("recipe", recipe_id)
+
     return await _to_read(session, recipe, servings=servings)
 
 
-@router.post("", response_model=RecipeRead, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_recipe(
     payload: RecipeCreate,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user),
 ):
     recipe = await repo.create(session, payload, author_id=user.id)
-    return await _to_read(session, recipe, servings=recipe.base_servings)
+
+    return {
+        "id": recipe.id,
+        "moderation_status": recipe.moderation_status,
+        "is_published": recipe.is_published,
+    }
 
 
 @router.patch("/{recipe_id}", response_model=RecipeRead)
@@ -181,9 +189,10 @@ async def update_recipe(
         raise not_found("recipe", recipe_id)
 
     if (recipe.author_id != user.id) and (not user.is_admin):
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403)
 
     recipe = await repo.update(session, recipe, payload)
+
     return await _to_read(session, recipe, servings=recipe.base_servings)
 
 
@@ -198,7 +207,6 @@ async def delete_recipe(
         raise not_found("recipe", recipe_id)
 
     if (recipe.author_id != user.id) and (not user.is_admin):
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403)
 
     await repo.delete(session, recipe)
-    return None

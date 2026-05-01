@@ -11,6 +11,7 @@ from app.models.shopping_cart import ShoppingCartItem
 from app.schemas.recipes import RecipeCreate, RecipeUpdate
 from app.models.ingredient import Ingredient
 from app.models.recipe_ingredient import RecipeIngredient
+from app.utils.moderation import moderate_recipe_full
 
 
 class RecipeRepository:
@@ -19,13 +20,18 @@ class RecipeRepository:
         return result.scalars().first()
 
     async def create(self, session: AsyncSession, payload: RecipeCreate, *, author_id: int) -> Recipe:
+        status = await moderate_recipe_full(payload.title, payload.description)
+
         recipe = Recipe(
             author_id=author_id,
             title=payload.title,
             description=payload.description,
             cooking_time_minutes=payload.cooking_time_minutes,
             base_servings=payload.base_servings,
+            moderation_status=status,
+            is_published=status == "approved",
         )
+
         session.add(recipe)
         await session.commit()
         await session.refresh(recipe)
@@ -47,6 +53,10 @@ class RecipeRepository:
             recipe.cooking_time_minutes = data["cooking_time_minutes"]
         if "base_servings" in data:
             recipe.base_servings = data["base_servings"]
+
+        status = await moderate_recipe_full(recipe.title, recipe.description)
+        recipe.moderation_status = status
+        recipe.is_published = status == "approved"
 
         await session.commit()
         await session.refresh(recipe)
@@ -78,7 +88,7 @@ class RecipeRepository:
         is_favorited: bool,
         is_in_shopping_cart: bool,
     ) -> List[Recipe]:
-        stmt = select(Recipe)
+        stmt = select(Recipe).where(Recipe.is_published.is_(True))
 
         if author_id is not None:
             stmt = stmt.where(Recipe.author_id == author_id)
@@ -90,10 +100,14 @@ class RecipeRepository:
                 .distinct()
             )
 
-        if is_favorited:
-            stmt = stmt.join(Favorite, Favorite.recipe_id == Recipe.id).where(Favorite.user_id == user_id).distinct()
+        if is_favorited and user_id is not None:
+            stmt = (
+                stmt.join(Favorite, Favorite.recipe_id == Recipe.id)
+                .where(Favorite.user_id == user_id)
+                .distinct()
+            )
 
-        if is_in_shopping_cart:
+        if is_in_shopping_cart and user_id is not None:
             stmt = (
                 stmt.join(ShoppingCartItem, ShoppingCartItem.recipe_id == Recipe.id)
                 .where(ShoppingCartItem.user_id == user_id)
@@ -114,15 +128,21 @@ class RecipeRepository:
         is_favorited: bool,
         is_in_shopping_cart: bool,
     ) -> int:
-        stmt = select(func.count(func.distinct(Recipe.id))).select_from(Recipe)
+        stmt = select(func.count(func.distinct(Recipe.id))).select_from(Recipe).where(
+            Recipe.is_published.is_(True)
+        )
 
         if tag_ids:
-            stmt = stmt.join(RecipeTag, RecipeTag.recipe_id == Recipe.id).where(RecipeTag.tag_id.in_(tag_ids))
+            stmt = stmt.join(RecipeTag, RecipeTag.recipe_id == Recipe.id).where(
+                RecipeTag.tag_id.in_(tag_ids)
+            )
 
-        if is_favorited:
-            stmt = stmt.join(Favorite, Favorite.recipe_id == Recipe.id).where(Favorite.user_id == user_id)
+        if is_favorited and user_id is not None:
+            stmt = stmt.join(Favorite, Favorite.recipe_id == Recipe.id).where(
+                Favorite.user_id == user_id
+            )
 
-        if is_in_shopping_cart:
+        if is_in_shopping_cart and user_id is not None:
             stmt = stmt.join(ShoppingCartItem, ShoppingCartItem.recipe_id == Recipe.id).where(
                 ShoppingCartItem.user_id == user_id
             )
@@ -140,9 +160,8 @@ class RecipeRepository:
         await session.commit()
 
     async def _replace_ingredients(self, session: AsyncSession, recipe_id: int, ingredients_in) -> None:
-        from app.models.recipe_ingredient import RecipeIngredient
-
         await session.execute(delete(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id))
+
         if ingredients_in:
             normalized = []
             for item in ingredients_in:
@@ -156,14 +175,20 @@ class RecipeRepository:
 
             session.add_all(
                 [
-                    RecipeIngredient(recipe_id=recipe_id, ingredient_id=ingredient_id, amount=amount)
+                    RecipeIngredient(
+                        recipe_id=recipe_id,
+                        ingredient_id=ingredient_id,
+                        amount=amount,
+                    )
                     for ingredient_id, amount in normalized
                 ]
             )
+
         await session.commit()
 
     async def _replace_steps(self, session: AsyncSession, recipe_id: int, steps_in) -> None:
         await session.execute(delete(RecipeStep).where(RecipeStep.recipe_id == recipe_id))
+
         if steps_in:
             normalized = []
             for item in steps_in:
@@ -176,15 +201,23 @@ class RecipeRepository:
                     position = int(item.position)
                     text = str(item.text)
                     duration_sec = int(item.duration_sec) if item.duration_sec is not None else None
+
                 normalized.append((position, text, duration_sec))
 
             normalized.sort(key=lambda x: x[0])
+
             session.add_all(
                 [
-                    RecipeStep(recipe_id=recipe_id, position=pos, text=text, duration_sec=dur)
+                    RecipeStep(
+                        recipe_id=recipe_id,
+                        position=pos,
+                        text=text,
+                        duration_sec=dur,
+                    )
                     for pos, text, dur in normalized
                 ]
             )
+
         await session.commit()
 
     async def get_recipe_tags(self, session: AsyncSession, recipe_id: int):
@@ -200,7 +233,6 @@ class RecipeRepository:
         return list(result.scalars().all())
 
     async def get_recipe_ingredients(self, session: AsyncSession, recipe_id: int):
-
         stmt = (
             select(
                 Ingredient.id,
@@ -220,6 +252,10 @@ class RecipeRepository:
         return list(result.all())
 
     async def get_recipe_steps(self, session: AsyncSession, recipe_id: int) -> List[RecipeStep]:
-        stmt = select(RecipeStep).where(RecipeStep.recipe_id == recipe_id).order_by(RecipeStep.position.asc())
+        stmt = (
+            select(RecipeStep)
+            .where(RecipeStep.recipe_id == recipe_id)
+            .order_by(RecipeStep.position.asc())
+        )
         result = await session.execute(stmt)
         return list(result.scalars().all())

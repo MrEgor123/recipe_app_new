@@ -28,7 +28,6 @@ admin = Admin(
     app=app,
     engine=sync_engine,
     authentication_backend=AdminAuth(secret_key=settings.jwt_secret_key),
-    templates_dir="templates",
 )
 
 admin.add_view(UserAdmin)

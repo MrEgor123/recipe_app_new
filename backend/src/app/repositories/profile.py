@@ -8,6 +8,7 @@ from app.models.recipe import Recipe
 from app.models.recipe_rating import RecipeRating
 from app.models.subscription import Subscription
 from app.models.user import User
+from app.models.user_report import UserReport
 
 
 class ProfileRepository:
@@ -122,6 +123,41 @@ class ProfileRepository:
             }
             for row in rows
         ]
+
+    async def create_report(
+        self,
+        session: AsyncSession,
+        reporter_id: int,
+        reported_user_id: int,
+        reason: str,
+        comment: str | None,
+    ) -> UserReport:
+        report = UserReport(
+            reporter_id=reporter_id,
+            reported_user_id=reported_user_id,
+            reason=reason,
+            comment=comment,
+        )
+
+        session.add(report)
+        await session.commit()
+        await session.refresh(report)
+
+        return report
+
+    async def has_reported(
+        self,
+        session: AsyncSession,
+        reporter_id: int,
+        reported_user_id: int,
+    ) -> bool:
+        result = await session.execute(
+            select(UserReport.id).where(
+                UserReport.reporter_id == reporter_id,
+                UserReport.reported_user_id == reported_user_id,
+            )
+        )
+        return result.scalar_one_or_none() is not None
 
     async def update_profile(
         self,

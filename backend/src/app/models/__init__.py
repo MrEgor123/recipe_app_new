@@ -13,6 +13,7 @@ from app.models.recipe_step import RecipeStep
 from app.models.recipe_rating import RecipeRating
 from app.models.collection import Collection
 from app.models.collection_recipe import CollectionRecipe
+from app.models.user_report import UserReport
 
 __all__ = [
     "Base",
@@ -29,5 +30,6 @@ __all__ = [
     "RecipeStep",
     "RecipeRating",
     "Collection",
-    "CollectionRecipe"
+    "CollectionRecipe",
+    "UserReport",
 ]

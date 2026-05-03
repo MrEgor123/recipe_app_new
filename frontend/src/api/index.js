@@ -123,6 +123,22 @@ class Api {
     }).then((res) => this.checkResponse(res));
   }
 
+  reportUser({ user_id, reason, comment }) {
+    const token = localStorage.getItem("token");
+
+    return fetch(`/users/${user_id}/report/`, {
+      method: "POST",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        reason,
+        comment,
+      }),
+    }).then((res) => this.checkResponse(res));
+  }
+
   updateMyProfile({ status, bio, cover_image }) {
     const token = localStorage.getItem("token");
     const payload = {};

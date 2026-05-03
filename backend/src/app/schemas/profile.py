@@ -34,6 +34,10 @@ class UserProfileOut(BaseModel):
     created_at: datetime
     is_subscribed: bool
     is_owner: bool
+    is_admin: bool = False
+    is_blocked: bool = False
+    blocked_until: datetime | None = None
+    block_reason: str | None = None
     stats: ProfileStatsOut
     recipes: list[ProfileRecipeOut] = []
 
@@ -42,3 +46,16 @@ class UserProfileUpdate(BaseModel):
     status: str | None = Field(default=None, max_length=120)
     bio: str | None = Field(default=None, max_length=2000)
     cover_image: str | None = None
+
+
+class UserReportCreate(BaseModel):
+    reason: str = Field(..., min_length=3, max_length=120)
+    comment: str | None = Field(default=None, max_length=1000)
+
+
+class UserReportOut(BaseModel):
+    id: int
+    reason: str
+    comment: str | None = None
+    status: str
+    created_at: datetime

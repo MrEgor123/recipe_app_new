@@ -116,6 +116,8 @@ class FoodgramRecipeOut(BaseModel):
     rating_avg: float = 0
     rating_count: int = 0
     user_rating: Optional[int] = None
+    moderation_status: Optional[str] = None
+    is_published: Optional[bool] = None
 
 
 def clamp_limit(limit: int) -> int:
@@ -219,6 +221,9 @@ async def _recipe_to_foodgram(
     current_user_id: int | None,
     request: Request,
 ) -> dict:
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Not found")
+
     tags = await recipes_repo.get_recipe_tags(session, recipe.id)
     ingredients_rows = await recipes_repo.get_recipe_ingredients(session, recipe.id)
     steps = await recipes_repo.get_recipe_steps(session, recipe.id)
@@ -251,7 +256,15 @@ async def _recipe_to_foodgram(
         "text": recipe.description,
         "image": _absolute_media_url(request, recipe.image),
         "cooking_time": recipe.cooking_time_minutes,
-        "tags": [{"id": t.id, "name": t.name, "slug": t.slug, "color": t.color} for t in tags],
+        "tags": [
+            {
+                "id": t.id,
+                "name": t.name,
+                "slug": t.slug,
+                "color": t.color,
+            }
+            for t in tags
+        ],
         "ingredients": [
             {
                 "id": row.id,
@@ -265,12 +278,18 @@ async def _recipe_to_foodgram(
         "is_favorited": is_favorited,
         "is_in_shopping_cart": is_in_shopping_cart,
         "steps": [
-            {"position": s.position, "text": s.text, "duration_sec": s.duration_sec}
+            {
+                "position": s.position,
+                "text": s.text,
+                "duration_sec": s.duration_sec,
+            }
             for s in steps
         ],
         "rating_avg": rating_data["rating_avg"],
         "rating_count": rating_data["rating_count"],
         "user_rating": rating_data["user_rating"],
+        "moderation_status": recipe.moderation_status,
+        "is_published": recipe.is_published,
     }
 
 
@@ -278,6 +297,7 @@ async def _recipe_to_foodgram(
 async def token_login(payload: dict, session: AsyncSession = Depends(get_db_session)):
     email = payload.get("email")
     password = payload.get("password")
+
     if not email or not password:
         raise HTTPException(status_code=400, detail="email and password required")
 
@@ -311,7 +331,10 @@ async def create_user(payload: dict, session: AsyncSession = Depends(get_db_sess
         )
 
     if await users_repo.get_by_email(session, str(email)):
-        return JSONResponse(status_code=400, content={"email": ["User with this email already exists"]})
+        return JSONResponse(
+            status_code=400,
+            content={"email": ["User with this email already exists"]},
+        )
 
     if await users_repo.get_by_username(session, str(username)):
         return JSONResponse(
@@ -363,7 +386,15 @@ async def list_subscriptions(
         if not author:
             continue
 
-        stmt = select(Recipe).where(Recipe.author_id == author_id).order_by(Recipe.id.desc())
+        stmt = (
+            select(Recipe)
+            .where(
+                Recipe.author_id == author_id,
+                Recipe.is_published.is_(True),
+                Recipe.moderation_status == "approved",
+            )
+            .order_by(Recipe.id.desc())
+        )
         author_recipes = list((await session.execute(stmt)).scalars().all())
         recipes_count = len(author_recipes)
         author_recipes = author_recipes[:recipes_limit] if recipes_limit else []
@@ -418,7 +449,10 @@ async def list_users(
     offset = (page - 1) * limit
     users = await users_repo.list(session, limit=limit, offset=offset)
     current_user_id = current_user.id if current_user else None
-    results = [await _user_to_foodgram(session, u, current_user_id, request) for u in users]
+    results = [
+        await _user_to_foodgram(session, u, current_user_id, request)
+        for u in users
+    ]
     meta = _page_meta(count, page, limit, request)
     return {**meta, "results": results}
 
@@ -433,12 +467,22 @@ async def set_password(
     new_password = payload.get("new_password")
 
     if not current_password or not new_password:
-        raise HTTPException(status_code=400, detail="current_password and new_password required")
+        raise HTTPException(
+            status_code=400,
+            detail="current_password and new_password required",
+        )
 
     if not verify_password(str(current_password), user.password_hash):
-        return JSONResponse(status_code=400, content={"current_password": ["Wrong password"]})
+        return JSONResponse(
+            status_code=400,
+            content={"current_password": ["Wrong password"]},
+        )
 
-    await users_repo.update_password_hash(session, user=user, password_hash=hash_password(str(new_password)))
+    await users_repo.update_password_hash(
+        session,
+        user=user,
+        password_hash=hash_password(str(new_password)),
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -518,7 +562,15 @@ async def unsubscribe(
 @router.get("/tags/")
 async def list_tags(session: AsyncSession = Depends(get_db_session)):
     tags = await tags_repo.list(session)
-    return [{"id": t.id, "name": t.name, "slug": t.slug, "color": t.color} for t in tags]
+    return [
+        {
+            "id": t.id,
+            "name": t.name,
+            "slug": t.slug,
+            "color": t.color,
+        }
+        for t in tags
+    ]
 
 
 @router.get("/ingredients/")
@@ -527,7 +579,14 @@ async def list_ingredients(
     name: str = Query(default="", alias="name"),
 ):
     items = await ingredients_repo.search(session, search=name)
-    return [{"id": i.id, "name": i.name, "measurement_unit": i.unit} for i in items]
+    return [
+        {
+            "id": i.id,
+            "name": i.name,
+            "measurement_unit": i.unit,
+        }
+        for i in items
+    ]
 
 
 @router.get("/recipes/")
@@ -573,7 +632,10 @@ async def list_recipes(
         is_in_shopping_cart=bool(is_in_shopping_cart),
     )
 
-    results = [await _recipe_to_foodgram(session, r, current_user_id, request) for r in recipes]
+    results = [
+        await _recipe_to_foodgram(session, r, current_user_id, request)
+        for r in recipes
+    ]
     meta = _page_meta(total, page, limit, request)
     return {**meta, "results": results}
 
@@ -611,13 +673,19 @@ async def get_recipe(
     return await _recipe_to_foodgram(session, recipe, current_user_id, request)
 
 
-@router.post("/recipes/", status_code=status.HTTP_201_CREATED, response_model=FoodgramRecipeOut)
+@router.post("/recipes/", response_model=FoodgramRecipeOut)
 async def create_recipe(
     request: Request,
     payload: FoodgramRecipeCreate,
     session: AsyncSession = Depends(get_db_session),
     user=Depends(get_current_user_token),
 ):
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Ваш профиль заблокирован. Создание рецептов недоступно.",
+        )
+
     recipe_create = RecipeCreate(
         title=payload.name,
         description=payload.text,
@@ -652,7 +720,7 @@ async def create_recipe(
         )
 
     await session.commit()
-    recipe = await recipes_repo.get(session, recipe.id)
+    await session.refresh(recipe)
 
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
@@ -718,7 +786,7 @@ async def update_recipe(
             raise HTTPException(status_code=400, detail=str(e))
 
     await session.commit()
-    recipe = await recipes_repo.get(session, recipe_id)
+    await session.refresh(recipe)
 
     return await _recipe_to_foodgram(session, recipe, user.id, request)
 
@@ -839,6 +907,7 @@ async def remove_favorite_foodgram(
         Favorite.recipe_id == recipe_id,
     )
     fav = (await session.execute(stmt)).scalars().first()
+
     if fav is not None:
         await session.delete(fav)
         await session.commit()
@@ -884,6 +953,7 @@ async def remove_from_cart_foodgram(
         ShoppingCartItem.recipe_id == recipe_id,
     )
     item = (await session.execute(stmt)).scalars().first()
+
     if item is not None:
         await session.delete(item)
         await session.commit()

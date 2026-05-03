@@ -7,7 +7,13 @@ from app.api import api_router
 from app.core.config import settings
 from app.core.db_sync import sync_engine
 from app.admin.auth import AdminAuth
-from app.admin.views import UserAdmin, RecipeAdmin, TagAdmin, IngredientAdmin
+from app.admin.views import (
+    UserAdmin,
+    UserReportAdmin,
+    RecipeAdmin,
+    TagAdmin,
+    IngredientAdmin,
+)
 
 app = FastAPI(title="Recipe App", version="0.3.0")
 
@@ -26,6 +32,7 @@ admin = Admin(
 )
 
 admin.add_view(UserAdmin)
+admin.add_view(UserReportAdmin)
 admin.add_view(RecipeAdmin)
 admin.add_view(TagAdmin)
 admin.add_view(IngredientAdmin)

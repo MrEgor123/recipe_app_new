@@ -148,6 +148,15 @@ const RecipeCreate = () => {
     );
   };
 
+  const showModerationPending = () => {
+    toast.info(
+      "Рецепт отправлен на модерацию. После проверки он появится на сайте",
+      {
+        autoClose: 8000,
+      }
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -168,18 +177,44 @@ const RecipeCreate = () => {
     api
       .createRecipe(data)
       .then((res) => {
-        if (res?.moderation_status === "approved" && res?.is_published) {
-          toast.success("Рецепт успешно создан");
+        const moderationStatus = res?.moderation_status;
+        const hasPublicationFlag = Object.prototype.hasOwnProperty.call(
+          res || {},
+          "is_published"
+        );
+
+        if (
+          moderationStatus === "rejected" ||
+          (hasPublicationFlag && res.is_published === false)
+        ) {
+          showModerationError();
+          history.push("/recipes");
+          return;
+        }
+
+        if (moderationStatus === "pending") {
+          showModerationPending();
+          history.push("/recipes");
+          return;
+        }
+
+        toast.success("Рецепт успешно создан");
+
+        if (res?.id) {
           history.push(`/recipes/${res.id}`);
           return;
         }
 
-        showModerationError();
-        history.push("/");
+        history.push("/recipes");
       })
       .catch((err) => {
-        const errors = Object.values(err || {});
-        toast.error(errors.join(", ") || "Ошибка создания рецепта");
+        console.log(err);
+
+        toast.error(
+          err?.detail ||
+            err?.message ||
+            "Ошибка создания рецепта"
+        );
       });
   };
 

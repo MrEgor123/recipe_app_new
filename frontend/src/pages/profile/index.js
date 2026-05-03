@@ -15,8 +15,17 @@ import api from "../../api";
 import styles from "./styles.module.css";
 import DefaultImage from "../../images/userpic-icon.jpg";
 
+const reportReasons = [
+  "Спам или реклама",
+  "Оскорбления или травля",
+  "Запрещённый контент",
+  "Подозрительный профиль",
+  "Другое",
+];
+
 const formatJoinDate = (value) => {
   if (!value) return "";
+
   try {
     return new Date(value).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -30,6 +39,7 @@ const formatJoinDate = (value) => {
 
 const formatCollectionDate = (value) => {
   if (!value) return "";
+
   try {
     return new Date(value).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -43,6 +53,7 @@ const formatCollectionDate = (value) => {
 
 const formatCommentDate = (value) => {
   if (!value) return "";
+
   try {
     return new Date(value).toLocaleDateString("ru-RU", {
       day: "2-digit",
@@ -65,10 +76,13 @@ const ProfilePage = ({ isMe = false }) => {
   const [collectionSaving, setCollectionSaving] = useState(false);
   const [subscribeLoading, setSubscribeLoading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [reportSending, setReportSending] = useState(false);
+
   const [profile, setProfile] = useState(null);
   const [collections, setCollections] = useState([]);
   const [comments, setComments] = useState([]);
   const [activeTab, setActiveTab] = useState("recipes");
+
   const [notificationError, setNotificationError] = useState({
     text: "",
     position: "-100%",
@@ -76,6 +90,10 @@ const ProfilePage = ({ isMe = false }) => {
 
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState(reportReasons[0]);
+  const [reportComment, setReportComment] = useState("");
 
   const profileId = useMemo(() => {
     if (isMe) return null;
@@ -104,7 +122,7 @@ const ProfilePage = ({ isMe = false }) => {
   }, [isMe, profileId]);
 
   const loadCollections = () => {
-    if (!profile) return;
+    if (!profile || profile.is_blocked) return;
 
     setCollectionsLoading(true);
 
@@ -124,7 +142,7 @@ const ProfilePage = ({ isMe = false }) => {
   };
 
   const loadComments = () => {
-    if (!profile) return;
+    if (!profile || profile.is_blocked) return;
 
     setCommentsLoading(true);
 
@@ -285,7 +303,9 @@ const ProfilePage = ({ isMe = false }) => {
   };
 
   const handleToggleSubscribe = () => {
-    if (!profile || profile.is_owner || subscribeLoading) return;
+    if (!profile || profile.is_owner || subscribeLoading || profile.is_blocked) {
+      return;
+    }
 
     const wasSubscribed = profile.is_subscribed;
 
@@ -316,6 +336,55 @@ const ProfilePage = ({ isMe = false }) => {
         });
       })
       .finally(() => setSubscribeLoading(false));
+  };
+
+  const openReportModal = () => {
+    if (!localStorage.getItem("token")) {
+      setNotificationError({
+        text: "Чтобы отправить жалобу, нужно войти в аккаунт",
+        position: "40px",
+      });
+      return;
+    }
+
+    setReportReason(reportReasons[0]);
+    setReportComment("");
+    setIsReportModalOpen(true);
+  };
+
+  const closeReportModal = () => {
+    if (reportSending) return;
+    setIsReportModalOpen(false);
+    setReportComment("");
+    setReportReason(reportReasons[0]);
+  };
+
+  const handleSubmitReport = () => {
+    if (!profile || reportSending) return;
+
+    setReportSending(true);
+
+    api
+      .reportUser({
+        user_id: profile.id,
+        reason: reportReason,
+        comment: reportComment.trim() || null,
+      })
+      .then(() => {
+        setNotificationError({
+          text: "Жалоба отправлена. Администратор проверит профиль",
+          position: "40px",
+        });
+        closeReportModal();
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: err?.detail || "Не удалось отправить жалобу. Попробуйте позже",
+          position: "40px",
+        });
+      })
+      .finally(() => setReportSending(false));
   };
 
   if (loading) {
@@ -369,9 +438,17 @@ const ProfilePage = ({ isMe = false }) => {
     created_at,
     is_owner,
     is_subscribed,
+    is_blocked,
+    blocked_until,
+    block_reason,
+    is_admin,
     stats = {},
     recipes = [],
   } = profile;
+
+  const blockedUntilText = blocked_until
+    ? `до ${formatJoinDate(blocked_until)}`
+    : "навсегда";
 
   return (
     <Main>
@@ -384,467 +461,653 @@ const ProfilePage = ({ isMe = false }) => {
 
         <div className={styles.page}>
           <div
-            className={styles.cover}
-            style={
-              cover_image ? { backgroundImage: `url(${cover_image})` } : undefined
-            }
+            className={cn(styles.profileBlockedWrap, {
+              [styles.profileBlockedWrapActive]: is_blocked,
+            })}
           >
-            {!cover_image && <div className={styles.coverPlaceholder} />}
-          </div>
+            <div
+              className={styles.cover}
+              style={
+                cover_image ? { backgroundImage: `url(${cover_image})` } : undefined
+              }
+            >
+              {!cover_image && <div className={styles.coverPlaceholder} />}
+            </div>
 
-          <div className={styles.profileCard}>
-            <div className={styles.profileTop}>
-              <div className={styles.avatarWrap}>
-                <button
-                  type="button"
-                  className={cn(styles.avatarButton, {
-                    [styles.avatarButtonEditable]: is_owner,
-                    [styles.avatarButtonLoading]: avatarUploading,
-                  })}
-                  onClick={openAvatarPicker}
-                  disabled={!is_owner || avatarUploading}
-                  title={is_owner ? "Нажмите, чтобы изменить аватар" : undefined}
-                >
-                  <div
-                    className={styles.avatar}
-                    style={{
-                      backgroundImage: `url(${avatar || DefaultImage})`,
-                    }}
-                  />
-                  {is_owner && (
-                    <span className={styles.avatarHint}>
-                      {avatarUploading ? "Загрузка..." : "Изменить"}
-                    </span>
-                  )}
-                </button>
+            <div className={styles.profileCard}>
+              <div className={styles.profileTop}>
+                <div className={styles.avatarWrap}>
+                  <button
+                    type="button"
+                    className={cn(styles.avatarButton, {
+                      [styles.avatarButtonEditable]: is_owner,
+                      [styles.avatarButtonLoading]: avatarUploading,
+                    })}
+                    onClick={openAvatarPicker}
+                    disabled={!is_owner || avatarUploading}
+                    title={is_owner ? "Нажмите, чтобы изменить аватар" : undefined}
+                  >
+                    <div className={styles.avatarBox}>
+                      <div
+                        className={styles.avatar}
+                        style={{
+                          backgroundImage: `url(${avatar || DefaultImage})`,
+                        }}
+                      />
 
-                {is_owner && (
-                  <input
-                    ref={avatarInputRef}
-                    type="file"
-                    accept="image/*"
-                    className={styles.hiddenInput}
-                    onChange={handleAvatarChange}
-                  />
-                )}
-              </div>
+                      {is_admin && (
+                        <div
+                          className={styles.adminAvatarBadge}
+                          title="Администратор Recepto"
+                        >
+                          ★
+                        </div>
+                      )}
+                    </div>
 
-              <div className={styles.profileMain}>
-                <div className={styles.profileHeader}>
-                  <div className={styles.profileTitleWrap}>
-                    <h1 className={styles.profileTitle}>{fullName}</h1>
-                    <div className={styles.profileUsername}>@{username}</div>
-                  </div>
-
-                  <div className={styles.profileActions}>
-                    {is_owner ? (
-                      <Button
-                        className={styles.profileActionBtn}
-                        modifier="style_light"
-                        type="button"
-                        clickHandler={() => history.push("/profile/edit")}
-                      >
-                        Редактировать профиль
-                      </Button>
-                    ) : (
-                      <Button
-                        className={cn(styles.profileActionBtn, {
-                          [styles.profileActionBtnActive]: is_subscribed,
-                        })}
-                        modifier={is_subscribed ? "style_dark" : "style_light"}
-                        type="button"
-                        clickHandler={handleToggleSubscribe}
-                        disabled={subscribeLoading}
-                      >
-                        {subscribeLoading
-                          ? is_subscribed
-                            ? "Отписка..."
-                            : "Подписка..."
-                          : is_subscribed
-                            ? "Вы подписаны"
-                            : "Подписаться"}
-                      </Button>
+                    {is_owner && (
+                      <span className={styles.avatarHint}>
+                        {avatarUploading ? "Загрузка..." : "Изменить"}
+                      </span>
                     )}
-                  </div>
-                </div>
-
-                <div className={styles.profileMeta}>
-                  <span className={styles.profileStatus}>
-                    {status || "Статус пока не указан"}
-                  </span>
-                  <span className={styles.profileDot} />
-                  <span className={styles.profileDate}>
-                    С нами с {formatJoinDate(created_at)}
-                  </span>
-                </div>
-
-                <div
-                  className={cn(styles.profileBio, {
-                    [styles.profileBioMuted]: !bio,
-                  })}
-                >
-                  {bio || "Пользователь пока не добавил описание профиля"}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.statsGrid}>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>{stats.recipes_count || 0}</span>
-                <span className={styles.statLabel}>Рецепты</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>
-                  {stats.followers_count || 0}
-                </span>
-                <span className={styles.statLabel}>Подписчики</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>
-                  {stats.following_count || 0}
-                </span>
-                <span className={styles.statLabel}>Подписки</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>
-                  {stats.comments_count || 0}
-                </span>
-                <span className={styles.statLabel}>Комментарии</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>
-                  {stats.collections_count || 0}
-                </span>
-                <span className={styles.statLabel}>Подборки</span>
-              </div>
-              <div className={styles.statCard}>
-                <span className={styles.statValue}>
-                  {stats.total_recipe_likes || 0}
-                </span>
-                <span className={styles.statLabel}>Лайки</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.tabsRow}>
-            <button
-              type="button"
-              className={cn(styles.tabBtn, {
-                [styles.tabBtnActive]: activeTab === "recipes",
-              })}
-              onClick={() => setActiveTab("recipes")}
-            >
-              Рецепты
-            </button>
-
-            <button
-              type="button"
-              className={cn(styles.tabBtn, {
-                [styles.tabBtnActive]: activeTab === "collections",
-              })}
-              onClick={() => setActiveTab("collections")}
-            >
-              Подборки
-            </button>
-
-            <button
-              type="button"
-              className={cn(styles.tabBtn, {
-                [styles.tabBtnActive]: activeTab === "comments",
-              })}
-              onClick={() => setActiveTab("comments")}
-            >
-              Комментарии
-            </button>
-
-            <button
-              type="button"
-              className={cn(styles.tabBtn, {
-                [styles.tabBtnActive]: activeTab === "about",
-              })}
-              onClick={() => setActiveTab("about")}
-            >
-              О пользователе
-            </button>
-          </div>
-
-          <div className={styles.tabContent}>
-            {activeTab === "recipes" && (
-              <div className={styles.contentCard}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>Рецепты пользователя</h2>
+                  </button>
 
                   {is_owner && (
-                    <Button
-                      className={styles.createRecipeBtn}
-                      modifier="style_dark"
-                      href="/recipes/create"
-                    >
-                      <Icons.PlusIcon />
-                      Создать рецепт
-                    </Button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      className={styles.hiddenInput}
+                      onChange={handleAvatarChange}
+                    />
                   )}
                 </div>
 
-                {recipes.length ? (
-                  <div className={styles.recipeGrid}>
-                    {recipes.map((recipe) => (
-                      <Link
-                        key={recipe.id}
-                        to={`/recipes/${recipe.id}`}
-                        className={styles.recipeCard}
-                      >
-                        <div className={styles.recipeImageWrap}>
-                          {recipe.image ? (
-                            <img
-                              src={recipe.image}
-                              alt={recipe.title}
-                              className={styles.recipeImage}
-                            />
-                          ) : (
-                            <div className={styles.recipeImagePlaceholder} />
-                          )}
-                        </div>
+                <div className={styles.profileMain}>
+                  <div className={styles.profileHeader}>
+                    <div className={styles.profileTitleWrap}>
+                      <h1 className={styles.profileTitle}>
+                        <span>{fullName}</span>
 
-                        <div className={styles.recipeCardBody}>
-                          <h3 className={styles.recipeTitle}>{recipe.title}</h3>
+                        {is_admin && (
+                          <span
+                            className={styles.adminVerifyBadge}
+                            title="Администратор Recepto"
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </h1>
 
-                          <div className={styles.recipeMeta}>
-                            <span className={styles.recipeMetaItem}>
-                              <Icons.ClockIcon />
-                              {recipe.cooking_time_minutes} мин.
-                            </span>
+                      <div className={styles.profileUsername}>@{username}</div>
+                    </div>
 
-                            <span className={styles.recipeMetaItem}>
-                              <span className={styles.recipeStar}>★</span>
-                              {Number(recipe.rating_avg || 0).toFixed(1)}
-                            </span>
+                    <div className={styles.profileActions}>
+                      {is_owner ? (
+                        <Button
+                          className={styles.profileActionBtn}
+                          modifier="style_light"
+                          type="button"
+                          clickHandler={() => history.push("/profile/edit")}
+                        >
+                          Редактировать профиль
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            className={cn(styles.profileActionBtn, {
+                              [styles.profileActionBtnActive]: is_subscribed,
+                            })}
+                            modifier={is_subscribed ? "style_dark" : "style_light"}
+                            type="button"
+                            clickHandler={handleToggleSubscribe}
+                            disabled={subscribeLoading || is_blocked}
+                          >
+                            {subscribeLoading
+                              ? is_subscribed
+                                ? "Отписка..."
+                                : "Подписка..."
+                              : is_subscribed
+                                ? "Вы подписаны"
+                                : "Подписаться"}
+                          </Button>
 
-                            <span className={styles.recipeMetaMuted}>
-                              оценок: {recipe.rating_count || 0}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                          <Button
+                            className={styles.reportBtn}
+                            modifier="style_light"
+                            type="button"
+                            clickHandler={openReportModal}
+                            disabled={is_blocked}
+                          >
+                            Пожаловаться
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className={styles.placeholderBox}>
-                    {is_owner
-                      ? "У вас пока нет рецептов. Создайте первый рецепт."
-                      : "У пользователя пока нет опубликованных рецептов"}
+
+                  <div className={styles.profileMeta}>
+                    <span className={styles.profileStatus}>
+                      {status || "Статус пока не указан"}
+                    </span>
+                    <span className={styles.profileDot} />
+                    <span className={styles.profileDate}>
+                      С нами с {formatJoinDate(created_at)}
+                    </span>
                   </div>
-                )}
+
+                  {is_admin && (
+                    <div className={styles.adminPanel}>
+                      <span className={styles.adminPanelIcon}>⚡</span>
+                      <div>
+                        <div className={styles.adminPanelTitle}>
+                          Администратор Recepto
+                        </div>
+                        <div className={styles.adminPanelText}>
+                          главный дегустатор багов и супов
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(styles.profileBio, {
+                      [styles.profileBioMuted]: !bio,
+                    })}
+                  >
+                    {bio || "Пользователь пока не добавил описание профиля"}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.statsGrid}>
+                <div className={styles.statCard}>
+                  <span className={styles.statValue}>{stats.recipes_count || 0}</span>
+                  <span className={styles.statLabel}>Рецепты</span>
+                </div>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statValue}>
+                    {stats.followers_count || 0}
+                  </span>
+                  <span className={styles.statLabel}>Подписчики</span>
+                </div>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statValue}>
+                    {stats.following_count || 0}
+                  </span>
+                  <span className={styles.statLabel}>Подписки</span>
+                </div>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statValue}>
+                    {stats.comments_count || 0}
+                  </span>
+                  <span className={styles.statLabel}>Комментарии</span>
+                </div>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statValue}>
+                    {stats.collections_count || 0}
+                  </span>
+                  <span className={styles.statLabel}>Подборки</span>
+                </div>
+
+                <div className={styles.statCard}>
+                  <span className={styles.statValue}>
+                    {stats.total_recipe_likes || 0}
+                  </span>
+                  <span className={styles.statLabel}>Лайки</span>
+                </div>
+              </div>
+            </div>
+
+            {is_blocked && (
+              <div className={styles.blockedOverlay}>
+                <div className={styles.blockedCard}>
+                  <div className={styles.blockedIcon}>!</div>
+
+                  <h2 className={styles.blockedTitle}>Профиль заблокирован</h2>
+
+                  <p className={styles.blockedText}>
+                    Доступ к профилю пользователя временно ограничен администрацией.
+                  </p>
+
+                  <div className={styles.blockedMeta}>
+                    Блокировка: {blockedUntilText}
+                  </div>
+
+                  {block_reason && (
+                    <div className={styles.blockedReason}>
+                      Причина: {block_reason}
+                    </div>
+                  )}
+
+                  <Button
+                    className={styles.blockedHomeBtn}
+                    modifier="style_dark"
+                    type="button"
+                    clickHandler={() => history.push("/")}
+                  >
+                    На главную
+                  </Button>
+                </div>
               </div>
             )}
+          </div>
 
-            {activeTab === "collections" && (
-              <div className={styles.contentCard}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>Подборки</h2>
+          {!is_blocked && (
+            <>
+              <div className={styles.tabsRow}>
+                <button
+                  type="button"
+                  className={cn(styles.tabBtn, {
+                    [styles.tabBtnActive]: activeTab === "recipes",
+                  })}
+                  onClick={() => setActiveTab("recipes")}
+                >
+                  Рецепты
+                </button>
 
-                  {is_owner && (
-                    <Button
-                      className={styles.createRecipeBtn}
-                      modifier="style_dark"
-                      clickHandler={openCreateCollectionModal}
-                    >
-                      <Icons.PlusIcon />
-                      Создать подборку
-                    </Button>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  className={cn(styles.tabBtn, {
+                    [styles.tabBtnActive]: activeTab === "collections",
+                  })}
+                  onClick={() => setActiveTab("collections")}
+                >
+                  Подборки
+                </button>
 
-                {collectionsLoading ? (
-                  <div className={styles.placeholderBox}>Загрузка подборок...</div>
-                ) : collections.length ? (
-                  <div className={styles.collectionGrid}>
-                    {collections.map((collection) => (
-                      <div key={collection.id} className={styles.collectionCard}>
-                        <div className={styles.collectionCardBody}>
-                          <div className={styles.collectionCardTop}>
-                            <div>
-                              <h3 className={styles.collectionTitle}>
-                                {collection.name}
-                              </h3>
-                              <div className={styles.collectionMeta}>
-                                Рецептов: {collection.recipes_count || 0}
+                <button
+                  type="button"
+                  className={cn(styles.tabBtn, {
+                    [styles.tabBtnActive]: activeTab === "comments",
+                  })}
+                  onClick={() => setActiveTab("comments")}
+                >
+                  Комментарии
+                </button>
+
+                <button
+                  type="button"
+                  className={cn(styles.tabBtn, {
+                    [styles.tabBtnActive]: activeTab === "about",
+                  })}
+                  onClick={() => setActiveTab("about")}
+                >
+                  О пользователе
+                </button>
+              </div>
+
+              <div className={styles.tabContent}>
+                {activeTab === "recipes" && (
+                  <div className={styles.contentCard}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Рецепты пользователя</h2>
+
+                      {is_owner && (
+                        <Button
+                          className={styles.createRecipeBtn}
+                          modifier="style_dark"
+                          href="/recipes/create"
+                        >
+                          <Icons.PlusIcon />
+                          Создать рецепт
+                        </Button>
+                      )}
+                    </div>
+
+                    {recipes.length ? (
+                      <div className={styles.recipeGrid}>
+                        {recipes.map((recipe) => (
+                          <Link
+                            key={recipe.id}
+                            to={`/recipes/${recipe.id}`}
+                            className={styles.recipeCard}
+                          >
+                            <div className={styles.recipeImageWrap}>
+                              {recipe.image ? (
+                                <img
+                                  src={recipe.image}
+                                  alt={recipe.title}
+                                  className={styles.recipeImage}
+                                />
+                              ) : (
+                                <div className={styles.recipeImagePlaceholder} />
+                              )}
+                            </div>
+
+                            <div className={styles.recipeCardBody}>
+                              <h3 className={styles.recipeTitle}>{recipe.title}</h3>
+
+                              <div className={styles.recipeMeta}>
+                                <span className={styles.recipeMetaItem}>
+                                  <Icons.ClockIcon />
+                                  {recipe.cooking_time_minutes} мин.
+                                </span>
+
+                                <span className={styles.recipeMetaItem}>
+                                  <span className={styles.recipeStar}>★</span>
+                                  {Number(recipe.rating_avg || 0).toFixed(1)}
+                                </span>
+
+                                <span className={styles.recipeMetaMuted}>
+                                  оценок: {recipe.rating_count || 0}
+                                </span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.placeholderBox}>
+                        {is_owner
+                          ? "У вас пока нет рецептов. Создайте первый рецепт."
+                          : "У пользователя пока нет опубликованных рецептов"}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "collections" && (
+                  <div className={styles.contentCard}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Подборки</h2>
+
+                      {is_owner && (
+                        <Button
+                          className={styles.createRecipeBtn}
+                          modifier="style_dark"
+                          clickHandler={openCreateCollectionModal}
+                        >
+                          <Icons.PlusIcon />
+                          Создать подборку
+                        </Button>
+                      )}
+                    </div>
+
+                    {collectionsLoading ? (
+                      <div className={styles.placeholderBox}>
+                        Загрузка подборок...
+                      </div>
+                    ) : collections.length ? (
+                      <div className={styles.collectionGrid}>
+                        {collections.map((collection) => (
+                          <div key={collection.id} className={styles.collectionCard}>
+                            <div className={styles.collectionCardBody}>
+                              <div className={styles.collectionCardTop}>
+                                <div>
+                                  <h3 className={styles.collectionTitle}>
+                                    {collection.name}
+                                  </h3>
+                                  <div className={styles.collectionMeta}>
+                                    Рецептов: {collection.recipes_count || 0}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div
+                                className={cn(styles.collectionDescription, {
+                                  [styles.collectionDescriptionMuted]:
+                                    !collection.description,
+                                })}
+                              >
+                                {collection.description ||
+                                  "Описание подборки не указано"}
+                              </div>
+
+                              <div className={styles.collectionFooter}>
+                                <div className={styles.collectionInfo}>
+                                  <span className={styles.collectionDateLabel}>
+                                    Создана
+                                  </span>
+                                  <span className={styles.collectionDateValue}>
+                                    {formatCollectionDate(collection.created_at)}
+                                  </span>
+                                </div>
+
+                                <div className={styles.collectionActions}>
+                                  {is_owner && (
+                                    <>
+                                      <Button
+                                        className={styles.collectionSecondaryBtn}
+                                        modifier="style_light"
+                                        clickHandler={() =>
+                                          openEditCollectionModal(collection)
+                                        }
+                                      >
+                                        Редактировать
+                                      </Button>
+
+                                      <Button
+                                        className={styles.collectionDangerBtn}
+                                        modifier="style_light"
+                                        clickHandler={() =>
+                                          handleDeleteCollection(collection.id)
+                                        }
+                                      >
+                                        Удалить
+                                      </Button>
+                                    </>
+                                  )}
+
+                                  <Button
+                                    className={styles.collectionOpenBtn}
+                                    modifier="style_dark"
+                                    clickHandler={() =>
+                                      history.push(`/collection/${collection.id}`)
+                                    }
+                                  >
+                                    Открыть подборку
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.placeholderBox}>
+                        {is_owner
+                          ? "У вас пока нет подборок"
+                          : "У пользователя пока нет подборок"}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                          <div
-                            className={cn(styles.collectionDescription, {
-                              [styles.collectionDescriptionMuted]:
-                                !collection.description,
-                            })}
-                          >
-                            {collection.description ||
-                              "Описание подборки не указано"}
-                          </div>
+                {activeTab === "comments" && (
+                  <div className={styles.contentCard}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Комментарии</h2>
+                    </div>
 
-                          <div className={styles.collectionFooter}>
-                            <div className={styles.collectionInfo}>
-                              <span className={styles.collectionDateLabel}>
-                                Создана
-                              </span>
-                              <span className={styles.collectionDateValue}>
-                                {formatCollectionDate(collection.created_at)}
-                              </span>
+                    {commentsLoading ? (
+                      <div className={styles.placeholderBox}>
+                        Загрузка комментариев...
+                      </div>
+                    ) : comments.length ? (
+                      <div className={styles.commentList}>
+                        {comments.map((comment) => (
+                          <div key={comment.id} className={styles.commentCard}>
+                            <div className={styles.commentTop}>
+                              <div className={styles.commentRecipeBlock}>
+                                <span className={styles.commentRecipeTitle}>
+                                  {comment.recipe?.title || "Рецепт"}
+                                </span>
+                                <span className={styles.commentRecipeSubtitle}>
+                                  Комментарий к рецепту
+                                </span>
+                              </div>
+
+                              <div className={styles.commentMeta}>
+                                {formatCommentDate(comment.created_at)}
+                              </div>
                             </div>
 
-                            <div className={styles.collectionActions}>
-                              {is_owner && (
-                                <>
-                                  <Button
-                                    className={styles.collectionSecondaryBtn}
-                                    modifier="style_light"
-                                    clickHandler={() =>
-                                      openEditCollectionModal(collection)
-                                    }
-                                  >
-                                    Редактировать
-                                  </Button>
+                            <div className={styles.commentText}>{comment.text}</div>
 
-                                  <Button
-                                    className={styles.collectionDangerBtn}
-                                    modifier="style_light"
-                                    clickHandler={() =>
-                                      handleDeleteCollection(collection.id)
-                                    }
-                                  >
-                                    Удалить
-                                  </Button>
-                                </>
+                            <div className={styles.commentBottom}>
+                              <span className={styles.commentMeta}>
+                                Лайков: {comment.likes_count || 0}
+                              </span>
+
+                              {comment.recipe?.id && (
+                                <Link
+                                  to={`/recipes/${comment.recipe.id}`}
+                                  className={styles.commentOpenLink}
+                                >
+                                  Перейти к рецепту
+                                </Link>
                               )}
-
-                              <Button
-                                className={styles.collectionOpenBtn}
-                                modifier="style_dark"
-                                clickHandler={() =>
-                                  history.push(`/collection/${collection.id}`)
-                                }
-                              >
-                                Открыть подборку
-                              </Button>
                             </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.placeholderBox}>
-                    {is_owner
-                      ? "У вас пока нет подборок"
-                      : "У пользователя пока нет подборок"}
+                    ) : (
+                      <div className={styles.placeholderBox}>
+                        {is_owner
+                          ? "У вас пока нет комментариев"
+                          : "У пользователя пока нет комментариев"}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {activeTab === "comments" && (
-              <div className={styles.contentCard}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>Комментарии</h2>
-                </div>
+                {activeTab === "about" && (
+                  <div className={styles.contentCard}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>О пользователе</h2>
+                    </div>
 
-                {commentsLoading ? (
-                  <div className={styles.placeholderBox}>Загрузка комментариев...</div>
-                ) : comments.length ? (
-                  <div className={styles.commentList}>
-                    {comments.map((comment) => (
-                      <div key={comment.id} className={styles.commentCard}>
-                        <div className={styles.commentTop}>
-                          <div className={styles.commentRecipeBlock}>
-                            <span className={styles.commentRecipeTitle}>
-                              {comment.recipe?.title || "Рецепт"}
-                            </span>
-                            <span className={styles.commentRecipeSubtitle}>
-                              Комментарий к рецепту
-                            </span>
-                          </div>
+                    <div className={styles.aboutGrid}>
+                      <div className={styles.aboutItem}>
+                        <span className={styles.aboutLabel}>Имя</span>
+                        <span className={styles.aboutValue}>{fullName}</span>
+                      </div>
 
-                          <div className={styles.commentMeta}>
-                            {formatCommentDate(comment.created_at)}
-                          </div>
-                        </div>
+                      <div className={styles.aboutItem}>
+                        <span className={styles.aboutLabel}>Username</span>
+                        <span className={styles.aboutValue}>@{username}</span>
+                      </div>
 
-                        <div className={styles.commentText}>{comment.text}</div>
-
-                        <div className={styles.commentBottom}>
-                          <span className={styles.commentMeta}>
-                            Лайков: {comment.likes_count || 0}
+                      {is_admin && (
+                        <div className={styles.aboutItem}>
+                          <span className={styles.aboutLabel}>Роль</span>
+                          <span className={styles.aboutValue}>
+                            Администратор Recepto
                           </span>
-
-                          {comment.recipe?.id && (
-                            <Link
-                              to={`/recipes/${comment.recipe.id}`}
-                              className={styles.commentOpenLink}
-                            >
-                              Перейти к рецепту
-                            </Link>
-                          )}
                         </div>
+                      )}
+
+                      <div className={styles.aboutItem}>
+                        <span className={styles.aboutLabel}>Статус</span>
+                        <span className={styles.aboutValue}>
+                          {status || "Не указан"}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={styles.placeholderBox}>
-                    {is_owner
-                      ? "У вас пока нет комментариев"
-                      : "У пользователя пока нет комментариев"}
+
+                      <div className={styles.aboutItem}>
+                        <span className={styles.aboutLabel}>Дата регистрации</span>
+                        <span className={styles.aboutValue}>
+                          {formatJoinDate(created_at)}
+                        </span>
+                      </div>
+
+                      <div className={styles.aboutItemFull}>
+                        <span className={styles.aboutLabel}>Описание</span>
+                        <span
+                          className={cn(styles.aboutValue, {
+                            [styles.aboutValueMuted]: !bio,
+                          })}
+                        >
+                          {bio || "Описание пока не заполнено"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
-            )}
-
-            {activeTab === "about" && (
-              <div className={styles.contentCard}>
-                <div className={styles.sectionHeader}>
-                  <h2 className={styles.sectionTitle}>О пользователе</h2>
-                </div>
-
-                <div className={styles.aboutGrid}>
-                  <div className={styles.aboutItem}>
-                    <span className={styles.aboutLabel}>Имя</span>
-                    <span className={styles.aboutValue}>{fullName}</span>
-                  </div>
-
-                  <div className={styles.aboutItem}>
-                    <span className={styles.aboutLabel}>Username</span>
-                    <span className={styles.aboutValue}>@{username}</span>
-                  </div>
-
-                  <div className={styles.aboutItem}>
-                    <span className={styles.aboutLabel}>Статус</span>
-                    <span className={styles.aboutValue}>
-                      {status || "Не указан"}
-                    </span>
-                  </div>
-
-                  <div className={styles.aboutItem}>
-                    <span className={styles.aboutLabel}>Дата регистрации</span>
-                    <span className={styles.aboutValue}>
-                      {formatJoinDate(created_at)}
-                    </span>
-                  </div>
-
-                  <div className={styles.aboutItemFull}>
-                    <span className={styles.aboutLabel}>Описание</span>
-                    <span
-                      className={cn(styles.aboutValue, {
-                        [styles.aboutValueMuted]: !bio,
-                      })}
-                    >
-                      {bio || "Описание пока не заполнено"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
+
+        {isReportModalOpen && (
+          <div className={styles.reportModalOverlay} onMouseDown={closeReportModal}>
+            <div
+              className={styles.reportModal}
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className={styles.reportModalHeader}>
+                <div>
+                  <h2 className={styles.reportModalTitle}>Жалоба на профиль</h2>
+                  <p className={styles.reportModalSubtitle}>
+                    Администратор проверит жалобу и при необходимости ограничит профиль.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.reportModalClose}
+                  onClick={closeReportModal}
+                  disabled={reportSending}
+                >
+                  ×
+                </button>
+              </div>
+
+              <label className={styles.reportLabel}>
+                Причина жалобы
+                <select
+                  className={styles.reportSelect}
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value)}
+                  disabled={reportSending}
+                >
+                  {reportReasons.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.reportLabel}>
+                Комментарий
+                <textarea
+                  className={styles.reportTextarea}
+                  value={reportComment}
+                  onChange={(event) => setReportComment(event.target.value)}
+                  placeholder="Опишите, что именно нарушает пользователь"
+                  maxLength={1000}
+                  disabled={reportSending}
+                />
+              </label>
+
+              <div className={styles.reportModalActions}>
+                <Button
+                  modifier="style_light"
+                  type="button"
+                  clickHandler={closeReportModal}
+                  disabled={reportSending}
+                >
+                  Отмена
+                </Button>
+
+                <Button
+                  modifier="style_dark"
+                  type="button"
+                  clickHandler={handleSubmitReport}
+                  disabled={reportSending}
+                >
+                  {reportSending ? "Отправка..." : "Отправить жалобу"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <CollectionModal
           isOpen={isCollectionModalOpen}

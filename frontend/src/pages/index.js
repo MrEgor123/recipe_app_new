@@ -11,6 +11,7 @@ import User from "./user";
 import ProfilePage from "./profile";
 import ProfileEditPage from "./profile-edit";
 import CollectionDetailPage from "./collection-detail";
+import ShoppingCartPage from "./shopping-cart";
 import ChangePassword from "./change-password";
 import About from "./about";
 import Technologies from "./technologies";
@@ -35,6 +36,7 @@ export {
   ProfilePage,
   ProfileEditPage,
   CollectionDetailPage,
+  ShoppingCartPage,
   ChangePassword,
   UpdateAvatar,
   NotFound,

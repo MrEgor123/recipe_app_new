@@ -613,6 +613,30 @@ class Api {
     }).then((res) => this.checkFileDownloadResponse(res));
   }
 
+  getShoppingCartMarket() {
+    const token = localStorage.getItem("token");
+
+    return fetch(this._withNoCache("/shopping-cart/market"), {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then((res) => this.checkResponse(res));
+  }
+
+  downloadShoppingListTxt() {
+    const token = localStorage.getItem("token");
+
+    return fetch("/shopping-cart/export.txt", {
+      method: "GET",
+      headers: {
+        ...this._headers,
+        authorization: `Bearer ${token}`,
+      },
+    }).then((res) => this.checkFileDownloadResponse(res));
+  }
+
   likeComment({ comment_id }) {
     const token = localStorage.getItem("token");
 

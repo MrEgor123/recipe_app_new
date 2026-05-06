@@ -11,7 +11,6 @@ import "react-toastify/dist/ReactToastify.css";
 
 import {
   Main,
-  Cart,
   SignIn,
   Subscriptions,
   Favorites,
@@ -26,6 +25,7 @@ import {
   ProfilePage,
   ProfileEditPage,
   CollectionDetailPage,
+  ShoppingCartPage,
 } from "./pages";
 
 import { AuthContext, UserContext } from "./contexts";
@@ -106,6 +106,7 @@ function App() {
         if (non_field_errors) {
           return alert(non_field_errors.join(", "));
         }
+
         const errors = Object.values(err);
         if (errors) {
           alert(errors.join(", "));
@@ -134,6 +135,7 @@ function App() {
       .then((res) => {
         if (res.auth_token) {
           localStorage.setItem("token", res.auth_token);
+
           api
             .getUserData()
             .then((userRes) => {
@@ -179,15 +181,13 @@ function App() {
   };
 
   const onSignOut = () => {
-    api
-      .signout()
-      .finally(() => {
-        localStorage.removeItem("token");
-        setUser({});
-        setOrders(0);
-        setLoggedIn(false);
-        history.push("/recipes");
-      });
+    api.signout().finally(() => {
+      localStorage.removeItem("token");
+      setUser({});
+      setOrders(0);
+      setLoggedIn(false);
+      history.push("/recipes");
+    });
   };
 
   const updateOrders = (add) => {
@@ -197,6 +197,7 @@ function App() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (token) {
       return api
         .getUserData()
@@ -210,6 +211,7 @@ function App() {
           history.push("/recipes");
         });
     }
+
     setLoggedIn(false);
   }, [history]);
 
@@ -253,7 +255,7 @@ function App() {
             <ProtectedRoute
               exact
               path="/cart"
-              component={Cart}
+              component={ShoppingCartPage}
               orders={orders}
               loggedIn={loggedIn}
               updateOrders={updateOrders}
@@ -351,7 +353,6 @@ function App() {
 
           <Footer />
 
-          {/* ВСПЛЫВАШКИ */}
           <ToastContainer
             position="top-right"
             autoClose={3000}

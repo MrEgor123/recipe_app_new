@@ -2,6 +2,7 @@ class Api {
   constructor(url, headers) {
     this._url = url;
     this._headers = headers;
+    this._createRecipeRequest = null;
   }
 
   _withNoCache(path) {
@@ -570,9 +571,13 @@ class Api {
     text = "",
     ingredients = [],
   }) {
+    if (this._createRecipeRequest) {
+      return this._createRecipeRequest;
+    }
+
     const token = localStorage.getItem("token");
 
-    return fetch("/api/recipes/", {
+    this._createRecipeRequest = fetch("/api/recipes/", {
       method: "POST",
       headers: {
         ...this._headers,
@@ -586,7 +591,13 @@ class Api {
         text,
         ingredients,
       }),
-    }).then((res) => this.checkResponse(res));
+    })
+      .then((res) => this.checkResponse(res))
+      .finally(() => {
+        this._createRecipeRequest = null;
+      });
+
+    return this._createRecipeRequest;
   }
 
   updateRecipe(

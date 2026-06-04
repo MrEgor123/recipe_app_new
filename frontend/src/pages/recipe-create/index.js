@@ -13,13 +13,16 @@ import {
 import styles from "./styles.module.css";
 import api from "../../api";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTags } from "../../utils";
 import { useHistory } from "react-router-dom";
 import MetaTags from "react-meta-tags";
 import { Icons } from "../../components";
 
 import { toast } from "react-toastify";
+
+const MAX_RECIPE_NAME_LENGTH = 120;
+const MAX_RECIPE_TEXT_LENGTH = 5000;
 
 const RecipeCreate = () => {
   const { value, handleChange, setValue } = useTags();
@@ -29,6 +32,8 @@ const RecipeCreate = () => {
   const [recipeText, setRecipeText] = useState("");
   const [recipeTime, setRecipeTime] = useState("");
   const [recipeFile, setRecipeFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const [ingredientValue, setIngredientValue] = useState({
     name: "",
@@ -72,7 +77,7 @@ const RecipeCreate = () => {
       return;
     }
 
-    if (!ingredientValue.amount || !/^\d+$/.test(ingredientValue.amount)) {
+    if (!ingredientValue.amount || !/^\d+$/.test(String(ingredientValue.amount))) {
       setIngredientError("Введите корректное количество");
       return;
     }
@@ -106,8 +111,17 @@ const RecipeCreate = () => {
   };
 
   const checkIfDisabled = () => {
-    if (!recipeName.trim()) {
+    const name = recipeName.trim();
+    const text = recipeText.trim();
+    const time = Number(recipeTime);
+
+    if (!name) {
       toast.error("Введите название рецепта");
+      return true;
+    }
+
+    if (name.length > MAX_RECIPE_NAME_LENGTH) {
+      toast.error(`Название рецепта должно быть не длиннее ${MAX_RECIPE_NAME_LENGTH} символов`);
       return true;
     }
 
@@ -121,13 +135,23 @@ const RecipeCreate = () => {
       return true;
     }
 
-    if (!recipeTime || Number(recipeTime) <= 0) {
-      toast.error("Введите корректное время приготовления");
+    if (!recipeTime || Number.isNaN(time) || time <= 0) {
+      toast.error("Время приготовления должно быть положительным числом");
       return true;
     }
 
-    if (!recipeText.trim()) {
+    if (!Number.isInteger(time)) {
+      toast.error("Время приготовления должно быть целым числом");
+      return true;
+    }
+
+    if (!text) {
       toast.error("Введите описание рецепта");
+      return true;
+    }
+
+    if (text.length > MAX_RECIPE_TEXT_LENGTH) {
+      toast.error(`Описание рецепта должно быть не длиннее ${MAX_RECIPE_TEXT_LENGTH} символов`);
       return true;
     }
 
@@ -160,7 +184,16 @@ const RecipeCreate = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (checkIfDisabled()) return;
+    if (isSubmittingRef.current) {
+      return;
+    }
+
+    if (checkIfDisabled()) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
 
     const data = {
       name: recipeName.trim(),
@@ -208,13 +241,14 @@ const RecipeCreate = () => {
         history.push("/recipes");
       })
       .catch((err) => {
-        console.log(err);
-
         toast.error(
-          err?.detail ||
-            err?.message ||
-            "Ошибка создания рецепта"
+          err?.message ||
+            err?.submitError ||
+            "Ошибка создания рецепта. Проверьте правильность заполнения формы"
         );
+
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
       });
   };
 
@@ -233,6 +267,7 @@ const RecipeCreate = () => {
             value={recipeName}
             onChange={(e) => setRecipeName(e.target.value)}
             className={styles.mb36}
+            maxLength={MAX_RECIPE_NAME_LENGTH}
           />
 
           <CheckboxGroup
@@ -356,6 +391,7 @@ const RecipeCreate = () => {
             placeholder="Опишите действия"
             value={recipeText}
             onChange={(e) => setRecipeText(e.target.value)}
+            maxLength={MAX_RECIPE_TEXT_LENGTH}
           />
 
           <FileInput
@@ -368,8 +404,9 @@ const RecipeCreate = () => {
             type="submit"
             modifier="style_dark-blue"
             className={styles.button}
+            disabled={isSubmitting}
           >
-            Создать рецепт
+            {isSubmitting ? "Создание..." : "Создать рецепт"}
           </Button>
         </form>
       </Container>

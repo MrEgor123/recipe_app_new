@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from urllib.parse import urlparse
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
@@ -17,6 +19,7 @@ from app.schemas.profile import (
     UserReportCreate,
     UserReportOut,
 )
+from app.utils.images import delete_image_file, save_base64_image
 
 router = APIRouter(prefix="/users", tags=["profile"])
 
@@ -25,7 +28,59 @@ collections_repo = CollectionRepository()
 comments_repo = CommentRepository()
 
 
+def _absolute_media_url(request: Request, image_path: str | None) -> str | None:
+    if not image_path:
+        return None
+
+    if image_path.startswith("data:image/"):
+        return None
+
+    if image_path.startswith("http://") or image_path.startswith("https://"):
+        return image_path
+
+    if image_path.startswith("/media/"):
+        base = str(request.base_url).rstrip("/")
+        return f"{base}{image_path}"
+
+    return image_path
+
+
+def _extract_media_path(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    if value.startswith("/media/"):
+        return value
+
+    if value.startswith("http://") or value.startswith("https://"):
+        parsed = urlparse(value)
+        if parsed.path.startswith("/media/"):
+            return parsed.path
+
+    return None
+
+
+def _normalize_cover_image(old_cover: str | None, new_cover: str | None) -> str | None:
+    if not new_cover:
+        if old_cover and old_cover.startswith("/media/"):
+            delete_image_file(old_cover)
+        return None
+
+    if new_cover.startswith("data:image/"):
+        if old_cover and old_cover.startswith("/media/"):
+            delete_image_file(old_cover)
+
+        return save_base64_image(new_cover, subdir="covers")
+
+    media_path = _extract_media_path(new_cover)
+    if media_path:
+        return media_path
+
+    return old_cover
+
+
 async def _build_profile(
+    request: Request,
     session: AsyncSession,
     target_user: User,
     current_user: User | None,
@@ -69,8 +124,8 @@ async def _build_profile(
         username=target_user.username,
         first_name=target_user.first_name,
         last_name=target_user.last_name,
-        avatar=target_user.avatar,
-        cover_image=target_user.cover_image,
+        avatar=_absolute_media_url(request, target_user.avatar),
+        cover_image=_absolute_media_url(request, target_user.cover_image),
         status=status_text,
         bio=bio_text,
         created_at=target_user.created_at,
@@ -87,10 +142,12 @@ async def _build_profile(
 
 @router.get("/me/profile/", response_model=UserProfileOut)
 async def get_my_profile(
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
 ):
     return await _build_profile(
+        request=request,
         session=session,
         target_user=current_user,
         current_user=current_user,
@@ -99,6 +156,7 @@ async def get_my_profile(
 
 @router.patch("/me/profile/", response_model=UserProfileOut)
 async def update_my_profile(
+    request: Request,
     payload: UserProfileUpdate,
     session: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
@@ -111,6 +169,15 @@ async def update_my_profile(
         if field_name in allowed_fields
     }
 
+    if "cover_image" in updates:
+        try:
+            updates["cover_image"] = _normalize_cover_image(
+                old_cover=current_user.cover_image,
+                new_cover=updates["cover_image"],
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     if updates:
         current_user = await repo.update_profile(
             session=session,
@@ -119,6 +186,7 @@ async def update_my_profile(
         )
 
     return await _build_profile(
+        request=request,
         session=session,
         target_user=current_user,
         current_user=current_user,
@@ -164,6 +232,7 @@ async def get_my_profile_comments(
 @router.get("/{user_id}/profile/", response_model=UserProfileOut)
 async def get_user_profile(
     user_id: int,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
     current_user: User | None = Depends(get_optional_user),
 ):
@@ -173,6 +242,7 @@ async def get_user_profile(
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     return await _build_profile(
+        request=request,
         session=session,
         target_user=target_user,
         current_user=current_user,

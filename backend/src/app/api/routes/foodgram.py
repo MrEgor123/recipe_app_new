@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -318,39 +320,60 @@ async def token_logout():
 
 @router.post("/users/", status_code=status.HTTP_201_CREATED)
 async def create_user(payload: dict, session: AsyncSession = Depends(get_db_session)):
-    email = payload.get("email")
-    password = payload.get("password")
-    username = payload.get("username")
-    first_name = payload.get("first_name", "")
-    last_name = payload.get("last_name", "")
+    email = str(payload.get("email") or "").strip().lower()
+    password = str(payload.get("password") or "")
+    username = str(payload.get("username") or "").strip()
+    first_name = str(payload.get("first_name") or "").strip()
+    last_name = str(payload.get("last_name") or "").strip()
+
+    email_pattern = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"
 
     if not email or not password or not username:
         return JSONResponse(
             status_code=400,
-            content={"non_field_errors": ["email, username and password required"]},
+            content={"non_field_errors": ["Заполните email, имя пользователя и пароль."]},
         )
 
-    if await users_repo.get_by_email(session, str(email)):
+    if not re.fullmatch(email_pattern, email):
         return JSONResponse(
             status_code=400,
-            content={"email": ["User with this email already exists"]},
+            content={"email": ["Введите корректный адрес электронной почты."]},
         )
 
-    if await users_repo.get_by_username(session, str(username)):
+    if len(username) < 3:
         return JSONResponse(
             status_code=400,
-            content={"username": ["User with this username already exists"]},
+            content={"username": ["Имя пользователя должно содержать не менее 3 символов."]},
+        )
+
+    if len(username) > 60:
+        return JSONResponse(
+            status_code=400,
+            content={"username": ["Имя пользователя должно содержать не более 60 символов."]},
+        )
+
+    if await users_repo.get_by_email(session, email):
+        return JSONResponse(
+            status_code=400,
+            content={"email": ["Пользователь с такой электронной почтой уже существует."]},
+        )
+
+    if await users_repo.get_by_username(session, username):
+        return JSONResponse(
+            status_code=400,
+            content={"username": ["Пользователь с таким именем уже существует."]},
         )
 
     user = await users_repo.create(
         session,
-        email=str(email),
-        username=str(username),
-        first_name=str(first_name or ""),
-        last_name=str(last_name or ""),
-        password_hash=hash_password(str(password)),
+        email=email,
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        password_hash=hash_password(password),
         is_admin=False,
     )
+
     return await _user_to_foodgram(session, user, None)
 
 

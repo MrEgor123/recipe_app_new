@@ -9,7 +9,7 @@ from app.repositories.users import UserRepository
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         form = await request.form()
-        email = str(form.get("username") or "").strip().lower()  # sqladmin так называет поле
+        email = str(form.get("username") or "").strip().lower()
         password = str(form.get("password") or "")
 
         if not email or not password:

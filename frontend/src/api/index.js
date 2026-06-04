@@ -9,6 +9,158 @@ class Api {
     return `${path}${separator}_=${Date.now()}`;
   }
 
+  getErrorMessage(data, status) {
+    if (!data) {
+      return "Произошла ошибка. Попробуйте ещё раз.";
+    }
+
+    if (typeof data === "string") {
+      return data;
+    }
+
+    if (Array.isArray(data.detail)) {
+      const messages = data.detail
+        .map((item) => {
+          const loc = Array.isArray(item.loc) ? item.loc.join(".") : "";
+          const msg = item.msg || "";
+
+          if (loc.includes("email")) {
+            return "Введите корректный адрес электронной почты.";
+          }
+
+          if (loc.includes("username")) {
+            return "Проверьте имя пользователя.";
+          }
+
+          if (loc.includes("password")) {
+            return "Проверьте пароль.";
+          }
+
+          if (loc.includes("cooking_time") || loc.includes("cooking_time_minutes")) {
+            return "Время приготовления должно быть положительным числом.";
+          }
+
+          if (loc.includes("name") || loc.includes("title")) {
+            return "Проверьте название рецепта.";
+          }
+
+          if (loc.includes("ingredients")) {
+            return "Проверьте список ингредиентов.";
+          }
+
+          if (loc.includes("tags")) {
+            return "Проверьте выбранные теги.";
+          }
+
+          if (msg) {
+            return msg;
+          }
+
+          return "Проверьте правильность заполнения формы.";
+        })
+        .filter(Boolean);
+
+      return messages.join(" ");
+    }
+
+    if (typeof data.detail === "string") {
+      const detail = data.detail;
+      const detailLower = detail.toLowerCase();
+
+      if (detail === "Invalid token") {
+        return "Сессия истекла. Войдите в аккаунт заново.";
+      }
+
+      if (detail === "Not authenticated") {
+        return "Необходимо войти в аккаунт.";
+      }
+
+      if (detailLower.includes("part exceeded maximum size")) {
+        return "Размер загружаемого файла слишком большой.";
+      }
+
+      if (detailLower.includes("username")) {
+        return "Пользователь с таким именем уже существует.";
+      }
+
+      if (detailLower.includes("email")) {
+        return "Пользователь с такой электронной почтой уже существует.";
+      }
+
+      if (detailLower.includes("not enough permissions")) {
+        return "Недостаточно прав для выполнения действия.";
+      }
+
+      if (detailLower.includes("not found")) {
+        return "Запрашиваемые данные не найдены.";
+      }
+
+      return detail;
+    }
+
+    if (data.username) {
+      return Array.isArray(data.username)
+        ? data.username.join(" ")
+        : "Пользователь с таким именем уже существует.";
+    }
+
+    if (data.email) {
+      return Array.isArray(data.email)
+        ? data.email.join(" ")
+        : "Пользователь с такой электронной почтой уже существует.";
+    }
+
+    if (data.password) {
+      return Array.isArray(data.password)
+        ? data.password.join(" ")
+        : "Проверьте пароль.";
+    }
+
+    if (data.name) {
+      return Array.isArray(data.name)
+        ? data.name.join(" ")
+        : "Проверьте название.";
+    }
+
+    if (data.cooking_time) {
+      return Array.isArray(data.cooking_time)
+        ? data.cooking_time.join(" ")
+        : "Время приготовления должно быть положительным числом.";
+    }
+
+    if (data.non_field_errors) {
+      return Array.isArray(data.non_field_errors)
+        ? data.non_field_errors.join(" ")
+        : String(data.non_field_errors);
+    }
+
+    if (status === 400) {
+      return "Проверьте правильность заполнения формы.";
+    }
+
+    if (status === 401) {
+      return "Необходимо войти в аккаунт.";
+    }
+
+    if (status === 403) {
+      return "Недостаточно прав для выполнения действия.";
+    }
+
+    if (status === 404) {
+      return "Запрашиваемые данные не найдены.";
+    }
+
+    if (status === 413) {
+      return "Размер загружаемого файла слишком большой.";
+    }
+
+    if (status === 422) {
+      return "Проверьте правильность заполнения формы.";
+    }
+
+    return "Произошла ошибка. Попробуйте ещё раз.";
+  }
+
   checkResponse(res) {
     if (res.status === 204) {
       return Promise.resolve({});
@@ -20,20 +172,31 @@ class Api {
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        data = {};
+        data = text || {};
       }
 
       if (res.ok) {
         return data;
       }
 
-      return Promise.reject(data);
+      const message = this.getErrorMessage(data, res.status);
+
+      return Promise.reject({
+        ...((typeof data === "object" && data !== null) ? data : {}),
+        submitError: message,
+        message,
+        status: res.status,
+      });
     });
   }
 
   checkFileDownloadResponse(res) {
     if (!res.ok) {
-      return Promise.reject({});
+      return Promise.reject({
+        submitError: this.getErrorMessage({}, res.status),
+        message: this.getErrorMessage({}, res.status),
+        status: res.status,
+      });
     }
 
     return res.blob().then((blob) => {

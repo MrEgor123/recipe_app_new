@@ -77,7 +77,6 @@ class FoodgramTagOut(BaseModel):
     id: int
     name: str
     slug: str
-    color: str
 
 
 class FoodgramIngredientOut(BaseModel):
@@ -263,7 +262,6 @@ async def _recipe_to_foodgram(
                 "id": t.id,
                 "name": t.name,
                 "slug": t.slug,
-                "color": t.color,
             }
             for t in tags
         ],
@@ -590,7 +588,6 @@ async def list_tags(session: AsyncSession = Depends(get_db_session)):
             "id": t.id,
             "name": t.name,
             "slug": t.slug,
-            "color": t.color,
         }
         for t in tags
     ]

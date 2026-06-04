@@ -125,7 +125,6 @@ const SignUp = ({ onSignUp, submitError, setSubmitError }) => {
             required
             isAuth={true}
             error={errors}
-            submitError={submitError}
             onChange={onChange}
           />
 

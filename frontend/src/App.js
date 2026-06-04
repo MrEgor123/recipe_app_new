@@ -54,9 +54,131 @@ function App() {
         "Аккаунт с такими данными не найден",
       "This field may not be blank.": "Поле не должно быть пустым",
       "This field is required.": "Обязательное поле",
+      "Invalid token.": "Ошибка авторизации. Войдите в аккаунт заново",
+      "Invalid Token": "Ошибка авторизации. Войдите в аккаунт заново",
     };
 
     return map[raw] || "Не удалось войти. Проверьте введённые данные";
+  };
+
+  const getRegistrationErrorMessage = (err) => {
+    const fieldNames = {
+      email: "Email",
+      username: "Имя пользователя",
+      password: "Пароль",
+      first_name: "Имя",
+      last_name: "Фамилия",
+      non_field_errors: "Ошибка",
+      detail: "Ошибка",
+    };
+
+    const translateMessage = (message) => {
+      const raw = String(message || "").trim();
+
+      const map = {
+        "A user with that username already exists.":
+          "Пользователь с таким именем уже существует.",
+        "user with this username already exists.":
+          "Пользователь с таким именем уже существует.",
+        "User with this username already exists.":
+          "Пользователь с таким именем уже существует.",
+        "Пользователь с таким именем уже существует.":
+          "Пользователь с таким именем уже существует.",
+        "Enter a valid email address.":
+          "Введите корректный адрес электронной почты.",
+        "Invalid email.":
+          "Введите корректный адрес электронной почты.",
+        "This field may not be blank.":
+          "Поле не должно быть пустым.",
+        "This field is required.":
+          "Обязательное поле.",
+        "This password is too short.":
+          "Пароль слишком короткий.",
+        "Invalid token.":
+          "Ошибка авторизации. Войдите в аккаунт заново.",
+        "Invalid Token":
+          "Ошибка авторизации. Войдите в аккаунт заново.",
+      };
+
+      if (map[raw]) {
+        return map[raw];
+      }
+
+      if (raw.includes("already exists")) {
+        return "Пользователь с такими данными уже существует.";
+      }
+
+      if (raw.includes("valid email")) {
+        return "Введите корректный адрес электронной почты.";
+      }
+
+      if (raw === "400" || raw === "Bad Request") {
+        return "";
+      }
+
+      return raw;
+    };
+
+    if (!err) {
+      return "Не удалось создать аккаунт. Проверьте введённые данные.";
+    }
+
+    if (typeof err === "string") {
+      return (
+        translateMessage(err) ||
+        "Не удалось создать аккаунт. Проверьте введённые данные."
+      );
+    }
+
+    if (Array.isArray(err)) {
+      const messages = err.map(translateMessage).filter(Boolean);
+      return [...new Set(messages)].join(" ");
+    }
+
+    if (typeof err === "object") {
+      const messages = [];
+
+      Object.entries(err).forEach(([field, value]) => {
+        const values = Array.isArray(value) ? value : [value];
+
+        values.forEach((item) => {
+          const text = translateMessage(item);
+
+          if (!text) {
+            return;
+          }
+
+          if (
+            field === "username" &&
+            text.includes("Пользователь с таким именем")
+          ) {
+            messages.push(text);
+            return;
+          }
+
+          if (field === "email" && text.includes("электронной почты")) {
+            messages.push(text);
+            return;
+          }
+
+          const fieldLabel = fieldNames[field];
+
+          if (fieldLabel && field !== "non_field_errors" && field !== "detail") {
+            messages.push(`${fieldLabel}: ${text}`);
+          } else {
+            messages.push(text);
+          }
+        });
+      });
+
+      const uniqueMessages = [...new Set(messages)];
+
+      if (uniqueMessages.length > 0) {
+        return uniqueMessages.join(" ");
+      }
+    }
+
+    return "Не удалось создать аккаунт. Проверьте введённые данные.";
   };
 
   const registration = ({
@@ -69,13 +191,13 @@ function App() {
     api
       .signup({ email, password, username, first_name, last_name })
       .then(() => {
+        setRegistrError({ submitError: "" });
         history.push("/signin");
       })
       .catch((err) => {
-        const errors = Object.values(err);
-        if (errors) {
-          setRegistrError({ submitError: errors.join(", ") });
-        }
+        setRegistrError({
+          submitError: getRegistrationErrorMessage(err),
+        });
         setLoggedIn(false);
       });
   };

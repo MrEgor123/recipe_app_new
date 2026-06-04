@@ -93,6 +93,25 @@ class CollectionRepository:
         row = result.first()
         return row if row else None
 
+    async def get_collection_with_count(
+        self,
+        session: AsyncSession,
+        *,
+        collection_id: int,
+    ) -> tuple[Collection, int] | None:
+        stmt = (
+            select(
+                Collection,
+                func.count(CollectionRecipe.id).label("recipes_count"),
+            )
+            .outerjoin(CollectionRecipe, CollectionRecipe.collection_id == Collection.id)
+            .where(Collection.id == collection_id)
+            .group_by(Collection.id)
+        )
+        result = await session.execute(stmt)
+        row = result.first()
+        return row if row else None
+
     async def update_collection(
         self,
         session: AsyncSession,

@@ -206,10 +206,12 @@ async def get_my_profile_collections(
     return [
         CollectionOut(
             id=collection.id,
+            user_id=collection.user_id,
             name=collection.name,
             description=collection.description,
             recipes_count=recipes_count,
             created_at=collection.created_at,
+            is_owner=True,
         )
         for collection, recipes_count in rows
     ]
@@ -324,10 +326,12 @@ async def get_user_profile_collections(
     return [
         CollectionOut(
             id=collection.id,
+            user_id=collection.user_id,
             name=collection.name,
             description=collection.description,
             recipes_count=recipes_count,
             created_at=collection.created_at,
+            is_owner=bool(current_user and current_user.id == collection.user_id),
         )
         for collection, recipes_count in rows
     ]

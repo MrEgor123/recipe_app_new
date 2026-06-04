@@ -41,13 +41,23 @@ const CollectionDetailPage = () => {
   const [saving, setSaving] = useState(false);
   const [collection, setCollection] = useState(null);
   const [recipes, setRecipes] = useState([]);
-  const [myCollections, setMyCollections] = useState([]);
   const [isOwner, setIsOwner] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [notificationError, setNotificationError] = useState({
     text: "",
     position: "-100%",
   });
+
+  const getBackUrl = () => {
+    if (!collection) return "/recipes";
+    if (collection.is_owner || isOwner) return "/profile";
+    if (collection.user_id) return `/users/${collection.user_id}`;
+    return "/recipes";
+  };
+
+  const goBackToOwnerProfile = () => {
+    history.push(getBackUrl());
+  };
 
   useEffect(() => {
     if (!id) {
@@ -62,28 +72,18 @@ const CollectionDetailPage = () => {
     Promise.all([
       api.getCollection({ collection_id: id }),
       api.getCollectionRecipes({ collection_id: id }).catch(() => []),
-      api.getMyCollectionsProfile().catch(() => []),
     ])
-      .then(([collectionData, recipesData, myCollectionsData]) => {
+      .then(([collectionData, recipesData]) => {
         const normalizedRecipes = Array.isArray(recipesData) ? recipesData : [];
-        const normalizedMyCollections = Array.isArray(myCollectionsData)
-          ? myCollectionsData
-          : [];
 
         setCollection(collectionData);
         setRecipes(normalizedRecipes);
-        setMyCollections(normalizedMyCollections);
-        setIsOwner(
-          normalizedMyCollections.some(
-            (item) => Number(item.id) === Number(collectionData.id)
-          )
-        );
+        setIsOwner(Boolean(collectionData.is_owner));
       })
       .catch((err) => {
         console.log(err);
         setCollection(null);
         setRecipes([]);
-        setMyCollections([]);
         setIsOwner(false);
         setNotificationError({
           text: "Не удалось загрузить подборку",
@@ -115,6 +115,38 @@ const CollectionDetailPage = () => {
       });
   };
 
+  const handleRemoveRecipe = (recipeId) => {
+    if (!collection || !recipeId) return;
+    if (!window.confirm("Удалить рецепт из подборки?")) return;
+
+    api
+      .removeRecipeFromCollection({
+        collection_id: collection.id,
+        recipe_id: recipeId,
+      })
+      .then(() => {
+        setRecipes((prev) =>
+          prev.filter((recipe) => Number(recipe.id) !== Number(recipeId))
+        );
+
+        setCollection((prev) =>
+          prev
+            ? {
+                ...prev,
+                recipes_count: Math.max(Number(prev.recipes_count || 0) - 1, 0),
+              }
+            : prev
+        );
+      })
+      .catch((err) => {
+        console.log(err);
+        setNotificationError({
+          text: "Не удалось удалить рецепт из подборки",
+          position: "40px",
+        });
+      });
+  };
+
   const handleUpdateCollection = ({ name, description }) => {
     if (!collection) return;
 
@@ -128,13 +160,7 @@ const CollectionDetailPage = () => {
       })
       .then((updatedCollection) => {
         setCollection(updatedCollection);
-        setMyCollections((prev) =>
-          prev.map((item) =>
-            Number(item.id) === Number(updatedCollection.id)
-              ? updatedCollection
-              : item
-          )
-        );
+        setIsOwner(Boolean(updatedCollection.is_owner));
         setIsEditModalOpen(false);
       })
       .catch((err) => {
@@ -172,7 +198,7 @@ const CollectionDetailPage = () => {
               <Button
                 className={styles.backBtn}
                 modifier="style_dark"
-                clickHandler={() => history.push("/profile")}
+                clickHandler={() => history.push("/recipes")}
               >
                 Назад
               </Button>
@@ -231,7 +257,7 @@ const CollectionDetailPage = () => {
                 <Button
                   className={styles.actionBtn}
                   modifier="style_light"
-                  clickHandler={() => history.goBack()}
+                  clickHandler={goBackToOwnerProfile}
                 >
                   Назад
                 </Button>
@@ -251,45 +277,58 @@ const CollectionDetailPage = () => {
             {recipes.length ? (
               <div className={styles.recipeGrid}>
                 {recipes.map((recipe) => (
-                  <Link
-                    key={recipe.id}
-                    to={`/recipes/${recipe.id}`}
-                    className={styles.recipeCard}
-                  >
-                    <div className={styles.recipeImageWrap}>
-                      {recipe.image ? (
-                        <img
-                          src={normalizeImageSrc(recipe.image)}
-                          alt={recipe.title || recipe.name}
-                          className={styles.recipeImage}
-                        />
-                      ) : (
-                        <div className={styles.recipeImagePlaceholder} />
-                      )}
-                    </div>
-
-                    <div className={styles.recipeCardBody}>
-                      <h3 className={styles.recipeTitle}>
-                        {recipe.title || recipe.name}
-                      </h3>
-
-                      <div className={styles.recipeMeta}>
-                        <span className={styles.recipeMetaItem}>
-                          <Icons.ClockIcon />
-                          {recipe.cooking_time_minutes || recipe.cooking_time} мин.
-                        </span>
-
-                        <span className={styles.recipeMetaItem}>
-                          <span className={styles.recipeStar}>★</span>
-                          {Number(recipe.rating_avg || 0).toFixed(1)}
-                        </span>
-
-                        <span className={styles.recipeMetaMuted}>
-                          оценок: {recipe.rating_count || 0}
-                        </span>
+                  <div key={recipe.id} className={styles.recipeCard}>
+                    <Link
+                      to={`/recipes/${recipe.id}`}
+                      className={styles.recipeCardLink}
+                    >
+                      <div className={styles.recipeImageWrap}>
+                        {recipe.image ? (
+                          <img
+                            src={normalizeImageSrc(recipe.image)}
+                            alt={recipe.title || recipe.name}
+                            className={styles.recipeImage}
+                          />
+                        ) : (
+                          <div className={styles.recipeImagePlaceholder} />
+                        )}
                       </div>
-                    </div>
-                  </Link>
+
+                      <div className={styles.recipeCardBody}>
+                        <h3 className={styles.recipeTitle}>
+                          {recipe.title || recipe.name}
+                        </h3>
+
+                        <div className={styles.recipeMeta}>
+                          <span className={styles.recipeMetaItem}>
+                            <Icons.ClockIcon />
+                            {recipe.cooking_time_minutes || recipe.cooking_time} мин.
+                          </span>
+
+                          <span className={styles.recipeMetaItem}>
+                            <span className={styles.recipeStar}>★</span>
+                            {Number(recipe.rating_avg || 0).toFixed(1)}
+                          </span>
+
+                          <span className={styles.recipeMetaMuted}>
+                            оценок: {recipe.rating_count || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+
+                    {isOwner && (
+                      <div className={styles.recipeCardFooter}>
+                        <Button
+                          className={styles.removeRecipeBtn}
+                          modifier="style_light"
+                          clickHandler={() => handleRemoveRecipe(recipe.id)}
+                        >
+                          Удалить из подборки
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (

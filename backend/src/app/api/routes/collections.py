@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_optional_user
 from app.models.user import User
 from app.repositories.collections import CollectionRepository
 from app.repositories.recipes import RecipeRepository
@@ -34,13 +34,19 @@ def _round2(value: float) -> float:
     return round(value, 2)
 
 
-def serialize_collection(collection, recipes_count: int) -> CollectionOut:
+def serialize_collection(
+    collection,
+    recipes_count: int,
+    current_user: User | None = None,
+) -> CollectionOut:
     return CollectionOut(
         id=collection.id,
+        user_id=collection.user_id,
         name=collection.name,
         description=collection.description,
         recipes_count=recipes_count,
         created_at=collection.created_at,
+        is_owner=bool(current_user and current_user.id == collection.user_id),
     )
 
 
@@ -95,10 +101,18 @@ async def _to_recipe_read(
     )
 
     nutrition_per_serving = NutritionOut(
-        calories=_round2(total_calories / selected_servings) if selected_servings else 0,
-        protein=_round2(total_protein / selected_servings) if selected_servings else 0,
-        fat=_round2(total_fat / selected_servings) if selected_servings else 0,
-        carbs=_round2(total_carbs / selected_servings) if selected_servings else 0,
+        calories=_round2(total_calories / selected_servings)
+        if selected_servings
+        else 0,
+        protein=_round2(total_protein / selected_servings)
+        if selected_servings
+        else 0,
+        fat=_round2(total_fat / selected_servings)
+        if selected_servings
+        else 0,
+        carbs=_round2(total_carbs / selected_servings)
+        if selected_servings
+        else 0,
     )
 
     return RecipeRead(
@@ -108,7 +122,15 @@ async def _to_recipe_read(
         cooking_time_minutes=recipe.cooking_time_minutes,
         base_servings=recipe.base_servings,
         selected_servings=selected_servings,
-        tags=[RecipeTagOut(id=t.id, name=t.name, slug=t.slug, color=t.color) for t in tags],
+        tags=[
+            RecipeTagOut(
+                id=tag.id,
+                name=tag.name,
+                slug=tag.slug,
+                color=tag.color,
+            )
+            for tag in tags
+        ],
         ingredients=ingredients,
         steps=[
             RecipeStepRead(
@@ -166,7 +188,7 @@ async def create_collection(
         )
 
     collection_obj, recipes_count = row
-    return serialize_collection(collection_obj, recipes_count)
+    return serialize_collection(collection_obj, recipes_count, current_user)
 
 
 @router.get("/", response_model=list[CollectionOut])
@@ -174,19 +196,25 @@ async def get_my_collections(
     session: AsyncSession = Depends(get_db_session),
     current_user: User = Depends(get_current_user),
 ):
-    rows = await collection_repo.get_user_collections(session, user_id=current_user.id)
-    return [serialize_collection(collection, recipes_count) for collection, recipes_count in rows]
+    rows = await collection_repo.get_user_collections(
+        session,
+        user_id=current_user.id,
+    )
+
+    return [
+        serialize_collection(collection, recipes_count, current_user)
+        for collection, recipes_count in rows
+    ]
 
 
 @router.get("/{collection_id}/", response_model=CollectionOut)
 async def get_collection(
     collection_id: int,
     session: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
 ):
-    row = await collection_repo.get_user_collection_with_count(
+    row = await collection_repo.get_collection_with_count(
         session,
-        user_id=current_user.id,
         collection_id=collection_id,
     )
     if not row:
@@ -196,7 +224,7 @@ async def get_collection(
         )
 
     collection, recipes_count = row
-    return serialize_collection(collection, recipes_count)
+    return serialize_collection(collection, recipes_count, current_user)
 
 
 @router.patch("/{collection_id}/", response_model=CollectionOut)
@@ -243,7 +271,7 @@ async def update_collection(
         )
 
     collection_obj, recipes_count = row
-    return serialize_collection(collection_obj, recipes_count)
+    return serialize_collection(collection_obj, recipes_count, current_user)
 
 
 @router.delete("/{collection_id}/", status_code=status.HTTP_204_NO_CONTENT)
@@ -271,11 +299,10 @@ async def delete_collection(
 async def get_collection_recipes(
     collection_id: int,
     session: AsyncSession = Depends(get_db_session),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_optional_user),
 ):
-    collection = await collection_repo.get_user_collection(
+    collection = await collection_repo.get_collection(
         session,
-        user_id=current_user.id,
         collection_id=collection_id,
     )
     if not collection:
@@ -288,6 +315,7 @@ async def get_collection_recipes(
         session,
         collection_id=collection_id,
     )
+
     return [_to_collection_recipe_card(recipe) for recipe in recipes]
 
 
@@ -335,6 +363,7 @@ async def add_recipe_to_collection(
         collection_id=collection_id,
         recipe_id=recipe_id,
     )
+
     return {"detail": "Рецепт добавлен в подборку"}
 
 
@@ -364,6 +393,7 @@ async def remove_recipe_from_collection(
         collection_id=collection_id,
         recipe_id=recipe_id,
     )
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -388,6 +418,7 @@ async def get_recipe_collections(
         user_id=current_user.id,
         recipe_id=recipe_id,
     )
+
     return CollectionRecipeIdsOut(collection_ids=collection_ids)
 
 
@@ -414,4 +445,5 @@ async def update_recipe_collections(
         recipe_id=recipe_id,
         collection_ids=payload.collection_ids,
     )
+
     return CollectionRecipeIdsOut(collection_ids=collection_ids)

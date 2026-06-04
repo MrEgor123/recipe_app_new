@@ -15,10 +15,12 @@ class CollectionUpdate(BaseModel):
 
 class CollectionOut(BaseModel):
     id: int
+    user_id: int
     name: str
     description: str | None = None
     recipes_count: int = 0
     created_at: datetime
+    is_owner: bool = False
 
 
 class CollectionRecipeIdsOut(BaseModel):

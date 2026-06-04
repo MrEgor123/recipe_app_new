@@ -5,6 +5,9 @@ from app.utils.local_moderation import moderate_recipe
 async def moderate_recipe_full(title: str, description: str) -> str:
     local_result = moderate_recipe(title, description)
 
+    if local_result == "approved":
+        return "approved"
+
     if local_result == "rejected":
         return "rejected"
 
@@ -24,4 +27,4 @@ async def moderate_recipe_full(title: str, description: str) -> str:
     if ai_result == "rejected":
         return "rejected"
 
-    return "pending"
+    return "approved"

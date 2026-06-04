@@ -300,4 +300,10 @@ def moderate_recipe(title: str, description: str) -> str:
     if not has_food_context and not has_cooking_context:
         return "rejected"
 
+    if has_food_context and has_cooking_context:
+        return "approved"
+
+    if has_food_context and len(description_text) >= 15:
+        return "approved"
+
     return "pending"

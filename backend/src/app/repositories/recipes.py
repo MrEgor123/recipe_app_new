@@ -113,19 +113,33 @@ class RecipeRepository:
         previous_status = recipe.moderation_status
         data = payload.model_dump(exclude_unset=True)
 
-        if "title" in data:
+        moderation_required = False
+
+        if "title" in data and data["title"] != recipe.title:
             recipe.title = data["title"]
-        if "description" in data:
+            moderation_required = True
+
+        if "description" in data and data["description"] != recipe.description:
             recipe.description = data["description"]
+            moderation_required = True
+
         if "cooking_time_minutes" in data:
             recipe.cooking_time_minutes = data["cooking_time_minutes"]
+
         if "base_servings" in data:
             recipe.base_servings = data["base_servings"]
 
-        status = await moderate_recipe_full(recipe.title, recipe.description)
+        if moderation_required:
+            status = await moderate_recipe_full(recipe.title, recipe.description)
 
-        recipe.moderation_status = status
-        recipe.is_published = status == "approved"
+            recipe.moderation_status = status
+            recipe.is_published = status == "approved"
+
+            if status == "rejected" and previous_status != "rejected":
+                await self._register_author_moderation_rejection(
+                    session=session,
+                    author_id=recipe.author_id,
+                )
 
         await session.commit()
         await session.refresh(recipe)
@@ -139,12 +153,7 @@ class RecipeRepository:
         if "steps" in data and data["steps"] is not None:
             await self._replace_steps(session, recipe.id, data["steps"])
 
-        if status == "rejected" and previous_status != "rejected":
-            await self._register_author_moderation_rejection(
-                session=session,
-                author_id=recipe.author_id,
-            )
-
+        await session.refresh(recipe)
         return recipe
 
     async def delete(self, session: AsyncSession, recipe: Recipe) -> None:

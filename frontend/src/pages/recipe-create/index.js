@@ -121,7 +121,9 @@ const RecipeCreate = () => {
     }
 
     if (name.length > MAX_RECIPE_NAME_LENGTH) {
-      toast.error(`Название рецепта должно быть не длиннее ${MAX_RECIPE_NAME_LENGTH} символов`);
+      toast.error(
+        `Название рецепта должно быть не длиннее ${MAX_RECIPE_NAME_LENGTH} символов`
+      );
       return true;
     }
 
@@ -151,7 +153,9 @@ const RecipeCreate = () => {
     }
 
     if (text.length > MAX_RECIPE_TEXT_LENGTH) {
-      toast.error(`Описание рецепта должно быть не длиннее ${MAX_RECIPE_TEXT_LENGTH} символов`);
+      toast.error(
+        `Описание рецепта должно быть не длиннее ${MAX_RECIPE_TEXT_LENGTH} символов`
+      );
       return true;
     }
 

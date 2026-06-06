@@ -1,5 +1,5 @@
-from app.utils.ai_moderation import ai_moderate
-from app.utils.local_moderation import moderate_recipe
+from app.utils.ai_moderation import ai_moderate, ai_moderate_comment
+from app.utils.local_moderation import moderate_comment, moderate_recipe
 
 
 async def moderate_recipe_full(title: str, description: str) -> str:
@@ -26,5 +26,22 @@ async def moderate_recipe_full(title: str, description: str) -> str:
 
     if ai_result == "rejected":
         return "rejected"
+
+    return "approved"
+
+
+async def moderate_comment_full(text: str) -> str:
+    local_result = moderate_comment(text)
+
+    if local_result == "rejected":
+        return "rejected"
+
+    ai_result = await ai_moderate_comment(text)
+
+    if ai_result == "rejected":
+        return "rejected"
+
+    if ai_result == "approved":
+        return "approved"
 
     return "approved"

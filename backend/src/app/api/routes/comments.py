@@ -8,11 +8,12 @@ from app.repositories.comments import CommentRepository
 from app.repositories.recipes import RecipeRepository
 from app.repositories.users import UserRepository
 from app.schemas.comments import (
-    CommentCreate,
-    CommentUpdate,
-    CommentOut,
     CommentAuthorOut,
+    CommentCreate,
+    CommentOut,
+    CommentUpdate,
 )
+from app.utils.moderation import moderate_comment_full
 
 router = APIRouter(prefix="/api", tags=["comments"])
 
@@ -41,7 +42,7 @@ async def _comment_to_out(
 ) -> CommentOut:
     author = await users_repo.get_by_id(session, comment.author_id)
     if author is None:
-        raise HTTPException(status_code=500, detail="Comment author not found")
+        raise HTTPException(status_code=500, detail="Автор комментария не найден")
 
     if likes_count is None:
         likes_count = await comments_repo.get_likes_count(session, comment.id)
@@ -49,7 +50,11 @@ async def _comment_to_out(
     if is_liked is None:
         is_liked = False
         if current_user_id is not None:
-            is_liked = await comments_repo.is_liked_by_user(session, comment.id, current_user_id)
+            is_liked = await comments_repo.is_liked_by_user(
+                session,
+                comment.id,
+                current_user_id,
+            )
 
     return CommentOut(
         id=comment.id,
@@ -63,6 +68,67 @@ async def _comment_to_out(
     )
 
 
+async def _validate_comment_text(
+    *,
+    session: AsyncSession,
+    recipe_id: int,
+    author_id: int,
+    text: str,
+    parent_id: int | None = None,
+    check_spam: bool = True,
+) -> str:
+    clean_text = (text or "").strip()
+
+    if not clean_text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Комментарий не может быть пустым",
+        )
+
+    if len(clean_text) > 2000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Комментарий должен быть не длиннее 2000 символов",
+        )
+
+    moderation_status = await moderate_comment_full(clean_text)
+    if moderation_status == "rejected":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Комментарий не прошёл модерацию. "
+                "Запрещены спам, бессмысленный текст, опасные темы и оскорбительное содержание."
+            ),
+        )
+
+    if check_spam:
+        recent_count = await comments_repo.count_recent_comments_by_user(
+            session,
+            author_id=author_id,
+            seconds=15,
+        )
+        if recent_count >= 1:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Не отправляйте комментарии слишком часто. Подождите несколько секунд.",
+            )
+
+        has_duplicate = await comments_repo.has_duplicate_recent_comment(
+            session,
+            recipe_id=recipe_id,
+            author_id=author_id,
+            text_value=clean_text,
+            parent_id=parent_id,
+        )
+        if has_duplicate:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Такой комментарий уже был отправлен.",
+            )
+
+    return clean_text
+
+
 @router.get("/recipes/{recipe_id}/comments/", response_model=list[CommentOut])
 async def list_recipe_comments(
     recipe_id: int,
@@ -71,7 +137,7 @@ async def list_recipe_comments(
 ):
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="Рецепт не найден")
 
     current_user_id = current_user.id if current_user else None
     rows = await comments_repo.list_by_recipe(
@@ -119,20 +185,38 @@ async def create_recipe_comment(
 ):
     recipe = await recipes_repo.get(session, recipe_id)
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail="Рецепт не найден")
+
+    if getattr(user, "is_blocked", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Заблокированный пользователь не может оставлять комментарии.",
+        )
 
     if payload.parent_id is not None:
         parent = await comments_repo.get(session, payload.parent_id)
         if not parent:
-            raise HTTPException(status_code=404, detail="Parent comment not found")
+            raise HTTPException(status_code=404, detail="Родительский комментарий не найден")
         if parent.recipe_id != recipe_id:
-            raise HTTPException(status_code=400, detail="Parent comment belongs to another recipe")
+            raise HTTPException(
+                status_code=400,
+                detail="Родительский комментарий относится к другому рецепту",
+            )
+
+    clean_text = await _validate_comment_text(
+        session=session,
+        recipe_id=recipe_id,
+        author_id=user.id,
+        text=payload.text,
+        parent_id=payload.parent_id,
+        check_spam=True,
+    )
 
     comment = await comments_repo.create(
         session=session,
         recipe_id=recipe_id,
         author_id=user.id,
-        text=payload.text,
+        text=clean_text,
         parent_id=payload.parent_id,
     )
     return await _comment_to_out(
@@ -153,12 +237,27 @@ async def update_comment(
 ):
     comment = await comments_repo.get(session, comment_id)
     if not comment:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        raise HTTPException(status_code=404, detail="Комментарий не найден")
 
     if comment.author_id != user.id and not user.is_admin:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
-    comment = await comments_repo.update(session, comment, payload.text)
+    if getattr(user, "is_blocked", False) and not user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Заблокированный пользователь не может редактировать комментарии.",
+        )
+
+    clean_text = await _validate_comment_text(
+        session=session,
+        recipe_id=comment.recipe_id,
+        author_id=user.id,
+        text=payload.text,
+        parent_id=comment.parent_id,
+        check_spam=False,
+    )
+
+    comment = await comments_repo.update(session, comment, clean_text)
     return await _comment_to_out(
         session=session,
         comment=comment,
@@ -174,10 +273,10 @@ async def delete_comment(
 ):
     comment = await comments_repo.get(session, comment_id)
     if not comment:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        raise HTTPException(status_code=404, detail="Комментарий не найден")
 
     if comment.author_id != user.id and not user.is_admin:
-        raise HTTPException(status_code=403, detail="Forbidden")
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
     await comments_repo.delete(session, comment)
     return None
@@ -191,7 +290,7 @@ async def like_comment(
 ):
     comment = await comments_repo.get(session, comment_id)
     if not comment:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        raise HTTPException(status_code=404, detail="Комментарий не найден")
 
     await comments_repo.add_like(session, comment_id=comment_id, user_id=user.id)
 
@@ -213,7 +312,7 @@ async def unlike_comment(
 ):
     comment = await comments_repo.get(session, comment_id)
     if not comment:
-        raise HTTPException(status_code=404, detail="Comment not found")
+        raise HTTPException(status_code=404, detail="Комментарий не найден")
 
     await comments_repo.remove_like(session, comment_id=comment_id, user_id=user.id)
 

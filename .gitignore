@@ -41,3 +41,8 @@ backend/static/
 
 # logs
 *.log
+# moderation private dictionaries
+backend/src/app/data/moderation/.blocked_terms.txt
+
+# private moderation dictionary
+backend/src/app/data/moderation/.blocked_terms.txt

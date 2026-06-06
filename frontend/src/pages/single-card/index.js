@@ -176,6 +176,33 @@ const SingleCard = ({ updateOrders }) => {
     }, 3000);
   };
 
+  const getCommentErrorText = (err, fallback) => {
+    if (!err) return fallback;
+
+    if (typeof err.detail === "string") {
+      return err.detail;
+    }
+
+    if (typeof err.message === "string") {
+      return err.message;
+    }
+
+    if (typeof err.submitError === "string") {
+      return err.submitError;
+    }
+
+    if (Array.isArray(err.detail)) {
+      const detailText = err.detail
+        .map((item) => item?.msg || item?.message || "")
+        .filter(Boolean)
+        .join(", ");
+
+      return detailText || fallback;
+    }
+
+    return fallback;
+  };
+
   const sortReplies = (items = []) => {
     return [...items].sort((a, b) => {
       const likesDiff = (b.likes_count || 0) - (a.likes_count || 0);
@@ -477,7 +504,7 @@ const SingleCard = ({ updateOrders }) => {
       .catch((err) => {
         console.log(err);
         setNotificationError({
-          text: "Не удалось отправить комментарий",
+          text: getCommentErrorText(err, "Не удалось отправить комментарий"),
           position: "40px",
         });
       })
@@ -504,7 +531,7 @@ const SingleCard = ({ updateOrders }) => {
       .catch((err) => {
         console.log(err);
         setNotificationError({
-          text: "Не удалось отправить ответ",
+          text: getCommentErrorText(err, "Не удалось отправить ответ"),
           position: "40px",
         });
       })
@@ -547,7 +574,7 @@ const SingleCard = ({ updateOrders }) => {
       .catch((err) => {
         console.log(err);
         setNotificationError({
-          text: "Не удалось обновить комментарий",
+          text: getCommentErrorText(err, "Не удалось обновить комментарий"),
           position: "40px",
         });
       })

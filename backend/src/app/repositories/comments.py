@@ -1,4 +1,4 @@
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.comment import Comment
@@ -133,6 +133,47 @@ class CommentRepository:
         stmt = select(Comment).where(Comment.id == comment_id)
         result = await session.execute(stmt)
         return result.scalars().first()
+    
+    async def has_duplicate_recent_comment(
+        self,
+        session: AsyncSession,
+        *,
+        recipe_id: int,
+        author_id: int,
+        text_value: str,
+        parent_id: int | None = None,
+    ) -> bool:
+        normalized_text = text_value.strip().lower()
+
+        conditions = [
+            Comment.recipe_id == recipe_id,
+            Comment.author_id == author_id,
+            func.lower(func.trim(Comment.text)) == normalized_text,
+            Comment.created_at >= func.now() - text("INTERVAL '10 minutes'"),
+        ]
+
+        if parent_id is None:
+            conditions.append(Comment.parent_id.is_(None))
+        else:
+            conditions.append(Comment.parent_id == parent_id)
+
+        stmt = select(Comment.id).where(and_(*conditions)).limit(1)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none() is not None
+
+    async def count_recent_comments_by_user(
+        self,
+        session: AsyncSession,
+        *,
+        author_id: int,
+        seconds: int = 15,
+    ) -> int:
+        stmt = select(func.count(Comment.id)).where(
+            Comment.author_id == author_id,
+            Comment.created_at >= func.now() - text(f"INTERVAL '{seconds} seconds'"),
+        )
+        result = await session.execute(stmt)
+        return int(result.scalar() or 0)
 
     async def create(
         self,

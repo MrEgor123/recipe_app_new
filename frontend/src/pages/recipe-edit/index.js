@@ -138,7 +138,7 @@ const RecipeEdit = ({ onItemDelete }) => {
 
         const tagsValueUpdated = value.map((item) => ({
           ...item,
-          value: Boolean(tags.find((tag) => tag.id === item.id)),
+          value: Boolean((tags || []).find((tag) => tag.id === item.id)),
         }));
 
         setValue(tagsValueUpdated);
@@ -210,6 +210,11 @@ const RecipeEdit = ({ onItemDelete }) => {
     return false;
   };
 
+  const openRecipeAfterSave = () => {
+    const targetUrl = `${window.location.origin}/recipes/${id}?updated=${Date.now()}`;
+    window.location.replace(targetUrl);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -241,7 +246,7 @@ const RecipeEdit = ({ onItemDelete }) => {
     api
       .updateRecipe(data, recipeFileWasManuallyChanged)
       .then(() => {
-        window.location.href = `/recipes/${id}`;
+        openRecipeAfterSave();
       })
       .catch((err) => {
         setSubmitError({
@@ -269,6 +274,12 @@ const RecipeEdit = ({ onItemDelete }) => {
     return (
       <Main>
         <Container>
+          <MetaTags>
+            <title>Редактирование рецепта</title>
+            <meta name="description" content="Recepto - Редактирование рецепта" />
+            <meta property="og:title" content="Редактирование рецепта" />
+          </MetaTags>
+
           <Title title="Редактирование рецепта" />
           <div>Загрузка...</div>
         </Container>

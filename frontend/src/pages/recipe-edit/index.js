@@ -129,11 +129,12 @@ const RecipeEdit = ({ onItemDelete }) => {
       })
       .then((res) => {
         const { image, tags, cooking_time, name, ingredients, text } = res;
-        setRecipeText(text);
-        setRecipeName(name);
-        setRecipeTime(cooking_time);
+
+        setRecipeText(text || "");
+        setRecipeName(name || "");
+        setRecipeTime(cooking_time || "");
         setRecipeFile(image);
-        setRecipeIngredients(ingredients);
+        setRecipeIngredients(Array.isArray(ingredients) ? ingredients : []);
 
         const tagsValueUpdated = value.map((item) => ({
           ...item,
@@ -240,7 +241,7 @@ const RecipeEdit = ({ onItemDelete }) => {
     api
       .updateRecipe(data, recipeFileWasManuallyChanged)
       .then(() => {
-        history.push(`/recipes/${id}`);
+        window.location.href = `/recipes/${id}`;
       })
       .catch((err) => {
         setSubmitError({
@@ -249,8 +250,6 @@ const RecipeEdit = ({ onItemDelete }) => {
             err?.submitError ||
             "Ошибка сохранения рецепта. Проверьте правильность заполнения формы",
         });
-      })
-      .finally(() => {
         setIsSubmitting(false);
       });
   };
@@ -265,6 +264,17 @@ const RecipeEdit = ({ onItemDelete }) => {
       history.push("/recipes");
     });
   };
+
+  if (loading) {
+    return (
+      <Main>
+        <Container>
+          <Title title="Редактирование рецепта" />
+          <div>Загрузка...</div>
+        </Container>
+      </Main>
+    );
+  }
 
   return (
     <Main>

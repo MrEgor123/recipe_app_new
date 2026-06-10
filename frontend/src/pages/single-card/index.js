@@ -11,7 +11,6 @@ import { UserContext, AuthContext } from "../../contexts";
 import { useContext, useState, useEffect } from "react";
 import styles from "./styles.module.css";
 import Ingredients from "./ingredients";
-import Description from "./description";
 import cn from "classnames";
 import { useRouteMatch, useParams, useHistory, Link } from "react-router-dom";
 import MetaTags from "react-meta-tags";
@@ -38,6 +37,21 @@ const formatCommentDate = (value) => {
 const getCommentDisplayName = (author = {}) => {
   const fullName = `${author.first_name || ""} ${author.last_name || ""}`.trim();
   return fullName || author.username || "Пользователь";
+};
+
+const formatRecipeDescription = (value) => {
+  const text = (value || "").trim();
+
+  if (!text) {
+    return "";
+  }
+
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+(?=\d+\.\s)/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 };
 
 const EditIcon = () => (
@@ -420,7 +434,17 @@ const SingleCard = ({ updateOrders }) => {
   const handleCopyLink = () => {
     api
       .copyRecipeLink({ id })
-      .then(({ "short-link": shortLink }) => {
+      .then((data) => {
+        const shortLink = data?.["short-link"] || data?.url || data?.short_link || "";
+
+        if (!shortLink) {
+          setNotificationError({
+            text: "Не удалось получить короткую ссылку",
+            position: "40px",
+          });
+          return;
+        }
+
         navigator.clipboard
           .writeText(shortLink)
           .then(() => {
@@ -1159,7 +1183,12 @@ const SingleCard = ({ updateOrders }) => {
 
           <div className={styles.fullWidthSection}>
             <div className={styles.infoCard}>
-              <Description description={text} />
+              <div className={styles.descriptionBlock}>
+                <h2 className={styles.descriptionTitle}>Описание</h2>
+                <div className={styles.descriptionText}>
+                  {formatRecipeDescription(text)}
+                </div>
+              </div>
             </div>
           </div>
 

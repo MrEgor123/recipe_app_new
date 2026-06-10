@@ -61,7 +61,7 @@ REGEX_PATTERNS = [
 ]
 
 
-SEPARATORS = ["", " ", ".", "-", "_", "*", "~", "|", "/", "\\", ":"]
+SEPARATORS = ["", " ", ".", "-", "_", "*"]
 
 
 def normalize_seed(word: str) -> str:

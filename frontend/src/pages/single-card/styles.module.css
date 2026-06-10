@@ -336,6 +336,31 @@
   height:100%;
 }
 
+/* description */
+
+.descriptionBlock{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.descriptionTitle{
+  margin:0;
+  font-size:22px;
+  line-height:1.2;
+  font-weight:800;
+  color:var(--text);
+}
+
+.descriptionText{
+  margin:0;
+  font-size:16px;
+  line-height:1.75;
+  color:var(--text);
+  white-space:pre-line;
+  word-break:break-word;
+}
+
 /* servings + nutrition */
 
 .servingsBlock{
@@ -1160,6 +1185,15 @@
   .infoCard{
     padding:18px;
     border-radius:20px;
+  }
+
+  .descriptionTitle{
+    font-size:20px;
+  }
+
+  .descriptionText{
+    font-size:15px;
+    line-height:1.65;
   }
 
   .commentsBlock{

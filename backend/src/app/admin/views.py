@@ -5,6 +5,7 @@ from app.models.user_report import UserReport
 from app.models.recipe import Recipe
 from app.models.tag import Tag
 from app.models.ingredient import Ingredient
+from app.models.support_request import SupportRequest
 
 
 class UserAdmin(ModelView, model=User):
@@ -133,6 +134,67 @@ class UserReportAdmin(ModelView, model=UserReport):
         UserReport.comment: "Комментарий",
         UserReport.status: "Статус",
         UserReport.created_at: "Дата создания",
+    }
+
+
+class SupportRequestAdmin(ModelView, model=SupportRequest):
+    name = "Обращение"
+    name_plural = "Обращения в поддержку"
+    icon = "fa-solid fa-headset"
+
+    page_size = 20
+    page_size_options = [10, 20, 50, 100]
+    column_default_sort = [(SupportRequest.id, True)]
+
+    can_export = True
+    can_create = False
+    can_edit = True
+    can_delete = True
+    save_as = False
+
+    column_list = [
+        SupportRequest.id,
+        SupportRequest.name,
+        SupportRequest.email,
+        SupportRequest.status,
+        SupportRequest.created_at,
+        SupportRequest.answered_at,
+    ]
+
+    column_searchable_list = [
+        SupportRequest.name,
+        SupportRequest.email,
+        SupportRequest.message,
+        SupportRequest.status,
+    ]
+
+    column_sortable_list = [
+        SupportRequest.id,
+        SupportRequest.email,
+        SupportRequest.status,
+        SupportRequest.created_at,
+        SupportRequest.answered_at,
+    ]
+
+    form_columns = [
+        SupportRequest.name,
+        SupportRequest.email,
+        SupportRequest.message,
+        SupportRequest.status,
+        SupportRequest.admin_response,
+        SupportRequest.answered_at,
+    ]
+
+    column_labels = {
+        SupportRequest.id: "ID",
+        SupportRequest.user: "Пользователь",
+        SupportRequest.name: "Имя",
+        SupportRequest.email: "Email",
+        SupportRequest.message: "Сообщение",
+        SupportRequest.status: "Статус",
+        SupportRequest.admin_response: "Ответ администратора",
+        SupportRequest.created_at: "Дата обращения",
+        SupportRequest.answered_at: "Дата ответа",
     }
 
 

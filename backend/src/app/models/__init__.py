@@ -15,6 +15,7 @@ from app.models.collection import Collection
 from app.models.collection_recipe import CollectionRecipe
 from app.models.user_report import UserReport
 from app.models.market_product import MarketProduct
+from app.models.support_request import SupportRequest
 
 __all__ = [
     "Base",
@@ -34,4 +35,5 @@ __all__ = [
     "CollectionRecipe",
     "UserReport",
     "MarketProduct",
+    "SupportRequest",
 ]

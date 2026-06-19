@@ -13,6 +13,7 @@ from app.admin.views import (
     RecipeAdmin,
     TagAdmin,
     IngredientAdmin,
+    SupportRequestAdmin,
 )
 
 app = FastAPI(title="Recipe App", version="0.3.0")
@@ -35,6 +36,7 @@ admin.add_view(UserReportAdmin)
 admin.add_view(RecipeAdmin)
 admin.add_view(TagAdmin)
 admin.add_view(IngredientAdmin)
+admin.add_view(SupportRequestAdmin)
 
 
 @app.get("/health")

@@ -13,6 +13,7 @@ from app.api.routes.comments import router as comments_router
 from app.api.routes.collections import router as collections_router
 from app.api.routes.collections import recipe_collections_router
 from app.api.routes.profile import router as profile_router
+from app.api.routes.support import router as support_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
@@ -28,3 +29,4 @@ api_router.include_router(comments_router)
 api_router.include_router(collections_router)
 api_router.include_router(recipe_collections_router)
 api_router.include_router(profile_router)
+api_router.include_router(support_router)

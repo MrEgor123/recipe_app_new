@@ -1,6 +1,7 @@
 import styles from './style.module.css'
 import { useEffect, useState } from 'react'
-import { AccountMenu, NavMenu, AccountMenuMobile, LinkComponent, Orders } from '../index.js'
+import { AccountMenu, NavMenu, AccountMenuMobile, LinkComponent } from '../index.js'
+import Icons from '../icons'
 import cn from 'classnames'
 import { useLocation } from 'react-router-dom'
 
@@ -18,6 +19,8 @@ const Nav = ({ loggedIn, onSignOut, orders }) => {
     setMenuToggled(false)
   }, [location.pathname])
 
+  const ordersCount = Number(orders) || 0
+
   return (
     <div className={styles.nav}>
       <div className={styles.nav__container}>
@@ -29,7 +32,17 @@ const Nav = ({ loggedIn, onSignOut, orders }) => {
         <LinkComponent
           href="/cart"
           className={styles.mobileOrders}
-          title={<Orders orders={orders} />}
+          title={
+            <>
+              <Icons.Cart />
+
+              {ordersCount > 0 && (
+                <span className={styles.mobileOrdersCounter}>
+                  {ordersCount}
+                </span>
+              )}
+            </>
+          }
         />
       )}
 

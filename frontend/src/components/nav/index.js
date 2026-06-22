@@ -1,6 +1,6 @@
 import styles from './style.module.css'
 import { useEffect, useState } from 'react'
-import { AccountMenu, NavMenu, AccountMenuMobile } from '../index.js'
+import { AccountMenu, NavMenu, AccountMenuMobile, LinkComponent, Orders } from '../index.js'
 import cn from 'classnames'
 import { useLocation } from 'react-router-dom'
 
@@ -24,6 +24,14 @@ const Nav = ({ loggedIn, onSignOut, orders }) => {
         <NavMenu loggedIn={loggedIn} />
         <AccountMenu onSignOut={onSignOut} orders={orders} />
       </div>
+
+      {loggedIn && (
+        <LinkComponent
+          href="/cart"
+          className={styles.mobileOrders}
+          title={<Orders orders={orders} />}
+        />
+      )}
 
       <button
         type="button"

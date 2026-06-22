@@ -360,6 +360,7 @@
 }
 
 .infoCard{
+  padding:22px;
   background:
     radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 32%),
     var(--surface);
@@ -381,7 +382,7 @@
 }
 
 .noteBox{
-  margin-top:18px;
+  margin-top:0;
   padding:16px 18px;
   border:1px solid rgba(245,158,11,.24);
   border-radius:18px;
@@ -443,9 +444,13 @@
   .hero,
   .marketCard,
   .listCard,
-  .infoCard,
   .summaryCard{
     padding:20px;
+    border-radius:22px;
+  }
+
+  .infoCard{
+    padding:18px;
     border-radius:22px;
   }
 

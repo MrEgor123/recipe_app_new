@@ -294,15 +294,6 @@ const ShoppingCartPage = () => {
           </div>
 
           <div className={styles.infoCard}>
-            <h2 className={styles.infoTitle}>Как это работает?</h2>
-
-            <p className={styles.infoText}>
-              Приложение берет ингредиенты из списка покупок, ищет для них
-              сохраненные товары из таблицы market_products и считает примерную
-              стоимость с учетом количества упаковок. Самый выгодный магазин
-              подсвечивается автоматически.
-            </p>
-
             <div className={styles.noteBox}>
               <div className={styles.noteTitle}>Важно</div>
 

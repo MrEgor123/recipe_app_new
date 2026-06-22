@@ -28,23 +28,21 @@ const Nav = ({ loggedIn, onSignOut, orders }) => {
         <AccountMenu onSignOut={onSignOut} orders={orders} />
       </div>
 
-      {loggedIn && (
-        <LinkComponent
-          href="/cart"
-          className={styles.mobileOrders}
-          title={
-            <>
-              <Icons.Cart />
+      <LinkComponent
+        href="/cart"
+        className={styles.mobileOrders}
+        title={
+          <>
+            <Icons.Cart />
 
-              {ordersCount > 0 && (
-                <span className={styles.mobileOrdersCounter}>
-                  {ordersCount}
-                </span>
-              )}
-            </>
-          }
-        />
-      )}
+            {ordersCount > 0 && (
+              <span className={styles.mobileOrdersCounter}>
+                {ordersCount}
+              </span>
+            )}
+          </>
+        }
+      />
 
       <button
         type="button"
